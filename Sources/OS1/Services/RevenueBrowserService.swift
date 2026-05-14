@@ -230,9 +230,36 @@ extension RevenueBrowserService {
             return None
 
         account_count = 0
-        accounts = raw.get("aitoearn_accounts")
-        if isinstance(accounts, list):
-            account_count = len([item for item in accounts if isinstance(item, dict) and item.get("status") == "active"])
+        aitoearn_key = env_value("AITOEARN_API_KEY")
+        if aitoearn_key:
+            try:
+                import re as _re
+                _rpc_payload = json.dumps({
+                    "jsonrpc": "2.0",
+                    "method": "tools/call",
+                    "params": {"name": "getAllAccounts", "arguments": {}},
+                    "id": 1,
+                })
+                _curl = subprocess.run(
+                    ["curl", "-s", "--max-time", "8",
+                     "--proxy", "socks5://127.0.0.1:1080",
+                     "-X", "POST", "https://aitoearn.ai/api/unified/mcp",
+                     "-H", "Content-Type: application/json",
+                     "-H", f"x-api-key: {aitoearn_key}",
+                     "-H", "Accept: application/json, text/event-stream",
+                     "-d", _rpc_payload],
+                    capture_output=True, text=True, timeout=12
+                )
+                if _curl.returncode == 0 and _curl.stdout.strip():
+                    _resp = json.loads(_curl.stdout)
+                    for _item in _resp.get("result", {}).get("content", []):
+                        if isinstance(_item, dict) and _item.get("type") == "text":
+                            _m = _re.search(r'^total:\s*(\d+)', _item["text"], _re.MULTILINE)
+                            if _m:
+                                account_count = int(_m.group(1))
+                            break
+            except Exception:
+                pass
 
         print(json.dumps({
             "log_path": str(log_path),

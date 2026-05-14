@@ -165,6 +165,55 @@ ORGO_DEFAULT_COMPUTER_ID="<uuid>" \
 swift test --filter OrgoTransportLiveTests
 ```
 
+## Samantha n8n Runtime
+
+Samantha-style Orgo images do not provide systemd or crontab, and a direct
+`npm install -g n8n` can hang or leave a partial install. The reproducible
+path is captured in:
+
+```sh
+scripts/install-n8n-samantha.sh
+```
+
+The script installs n8n with pnpm, rebuilds the native sqlite3 binding that n8n
+needs at startup, writes `/root/.hermes/bin/start-n8n.sh`, starts n8n on port
+`5678`, and verifies:
+
+```sh
+curl http://127.0.0.1:5678/healthz
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+### n8n Agent Control
+
+For workflows that should let Samantha act through the already-configured
+Hermes/Codex runtime and plugins, call the local bridge from an n8n Execute
+Command node:
+
+```sh
+scripts/n8n-agent-control.sh --prompt "Use Samantha's configured plugins to complete this task..."
+```
+
+The bridge defaults to full control mode, writes each run under
+`/root/.hermes/logs/n8n-agent-control`, delegates to Hermes first, and falls
+back to Codex when Hermes is not available. That keeps n8n responsible for
+workflow state, schedules, and retries while Hermes/Codex use the connected
+plugins, MCP servers, browser tools, and accounts already configured for
+Samantha.
+
+Useful overrides:
+
+```sh
+SAMANTHA_AGENT_RUNTIME=codex scripts/n8n-agent-control.sh --prompt "..."
+SAMANTHA_AGENT_CONTROL_MODE=dry-run scripts/n8n-agent-control.sh --prompt "..."
+SAMANTHA_AGENT_COMMAND="custom local command" scripts/n8n-agent-control.sh --prompt "..."
+```
+
 ## How it routes
 
 For cloud connections:

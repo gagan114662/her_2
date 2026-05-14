@@ -90,6 +90,11 @@ final class AppState: ObservableObject {
     @Published var isSavingKanbanTaskDraft = false
     @Published var isDispatchingKanban = false
     @Published var includeArchivedKanbanTasks = false
+    @Published var revenueDashboard: RevenueDashboard?
+    @Published var revenueError: String?
+    @Published var isLoadingRevenue = false
+    @Published var isRefreshingRevenue = false
+    @Published var isBootstrappingRevenue = false
     @Published var selectedWorkspaceFileID: String = RemoteTrackedFile.memory.workspaceFileID
     @Published var workspaceFileDocuments: [String: FileEditorDocument] = [:]
     @Published var workspaceFileBrowserListing: RemoteDirectoryListing?
@@ -118,6 +123,7 @@ final class AppState: ObservableObject {
     let knowledgeBaseService: KnowledgeBaseService
     let cronBrowserService: CronBrowserService
     let kanbanBrowserService: KanbanBrowserService
+    let revenueBrowserService: RevenueBrowserService
     let terminalWorkspace: TerminalWorkspaceStore
     let agentMailCredentialStore: AgentMailCredentialStore
     let agentMailAccountStore: AgentMailAccountStore
@@ -185,6 +191,7 @@ final class AppState: ObservableObject {
         self.knowledgeBaseService = KnowledgeBaseService(transport: transport)
         self.cronBrowserService = CronBrowserService(transport: transport)
         self.kanbanBrowserService = KanbanBrowserService(transport: transport)
+        self.revenueBrowserService = RevenueBrowserService(transport: transport)
         self.terminalWorkspace = TerminalWorkspaceStore(
             sshTransport: sshTransport,
             orgoTransport: orgoTransport
@@ -411,6 +418,8 @@ final class AppState: ObservableObject {
             return !isLoadingCronJobs && !isRefreshingCronJobs
         case .kanban:
             return !isLoadingKanbanBoard && !isRefreshingKanbanBoard
+        case .revenue:
+            return !isLoadingRevenue && !isRefreshingRevenue
         case .usage:
             return !isLoadingUsage && !isRefreshingUsage
         case .skills:
@@ -503,6 +512,8 @@ final class AppState: ObservableObject {
             await refreshCronJobs()
         case .kanban:
             await refreshKanbanBoard()
+        case .revenue:
+            await refreshRevenueDashboard(manual: true)
         case .usage:
             await refreshUsage()
         case .skills:
@@ -873,6 +884,44 @@ final class AppState: ObservableObject {
         isRefreshingKanbanBoard = true
         await loadKanbanBoard(includeArchived: includeArchived)
         isRefreshingKanbanBoard = false
+    }
+
+    func refreshRevenueDashboard(manual: Bool = false) async {
+        guard !isLoadingRevenue, !isRefreshingRevenue else { return }
+        if manual {
+            isRefreshingRevenue = true
+        }
+        await loadRevenueDashboard(forceRefresh: true)
+        if manual {
+            isRefreshingRevenue = false
+        }
+    }
+
+    func bootstrapRevenueAutomation() async {
+        guard let profile = activeConnection else { return }
+        guard !isBootstrappingRevenue else { return }
+
+        isBootstrappingRevenue = true
+        revenueError = nil
+        setStatusMessage(L10n.string("Bootstrapping revenue automation..."))
+
+        do {
+            let result = try await revenueBrowserService.bootstrap(connection: profile)
+            guard isActiveWorkspace(profile) else { return }
+            isBootstrappingRevenue = false
+            if result.success {
+                setStatusMessage(L10n.string("Revenue automation bootstrapped"))
+                await loadRevenueDashboard(forceRefresh: true)
+            } else {
+                revenueError = result.errors.joined(separator: "\n")
+                setStatusMessage(L10n.string("Revenue bootstrap needs attention"))
+            }
+        } catch {
+            guard isActiveWorkspace(profile) else { return }
+            isBootstrappingRevenue = false
+            revenueError = error.localizedDescription
+            setStatusMessage(L10n.string("Unable to bootstrap revenue automation"))
+        }
     }
 
     func workspaceFileDocument(for fileID: String) -> FileEditorDocument? {
@@ -1411,6 +1460,30 @@ final class AppState: ObservableObject {
             usageProfileBreakdown = nil
             usageError = error.localizedDescription
             setStatusMessage(L10n.string("Unable to load usage"))
+        }
+    }
+
+    func loadRevenueDashboard(forceRefresh: Bool = false) async {
+        guard let profile = activeConnection else { return }
+        if isLoadingRevenue { return }
+        if !forceRefresh, revenueDashboard != nil || revenueError != nil {
+            return
+        }
+
+        isLoadingRevenue = true
+        revenueError = nil
+
+        do {
+            let dashboard = try await revenueBrowserService.loadDashboard(connection: profile)
+            guard isActiveWorkspace(profile) else { return }
+            revenueDashboard = dashboard
+            isLoadingRevenue = false
+        } catch {
+            guard isActiveWorkspace(profile) else { return }
+            revenueDashboard = nil
+            isLoadingRevenue = false
+            revenueError = error.localizedDescription
+            setStatusMessage(L10n.string("Unable to load revenue dashboard"))
         }
     }
 
@@ -2158,6 +2231,8 @@ final class AppState: ObservableObject {
             Task { await loadCronJobs() }
         case .kanban:
             Task { await loadKanbanBoard() }
+        case .revenue:
+            Task { await loadRevenueDashboard() }
         case .usage:
             Task { await loadUsage(forceRefresh: true) }
         case .skills:
@@ -2220,6 +2295,8 @@ final class AppState: ObservableObject {
             await loadCronJobs()
         case .kanban:
             await loadKanbanBoard()
+        case .revenue:
+            await loadRevenueDashboard(forceRefresh: true)
         case .usage:
             await loadUsage(forceRefresh: true)
         case .skills:
@@ -2536,6 +2613,11 @@ final class AppState: ObservableObject {
         isSavingKanbanTaskDraft = false
         isDispatchingKanban = false
         includeArchivedKanbanTasks = false
+        revenueDashboard = nil
+        revenueError = nil
+        isLoadingRevenue = false
+        isRefreshingRevenue = false
+        isBootstrappingRevenue = false
         resetDocuments()
         hermesUpdateAvailability = .unknown
         hermesUpdateStatus = .idle

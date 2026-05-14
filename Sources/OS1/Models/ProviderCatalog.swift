@@ -133,6 +133,48 @@ enum ProviderCatalog {
             // to baseURL.path).
             validation: .modelsEndpoint(path: "/models"),
             supportsOAuth: false
+        ),
+        ProviderCatalogEntry(
+            slug: "stripe",
+            displayName: "Stripe",
+            tagline: "Payment products, checkout links, and webhook-backed revenue tracking.",
+            symbolName: "creditcard",
+            keyPrefixHint: "sk_live_…",
+            dashboardURL: URL(string: "https://dashboard.stripe.com/apikeys")!,
+            docsURL: URL(string: "https://docs.stripe.com/api")!,
+            envVar: "STRIPE_SECRET_KEY",
+            baseURL: URL(string: "https://api.stripe.com/v1")!,
+            kind: .customProvider(configName: "stripe"),
+            validation: .skip(reason: "Stripe keys are used by CLI/API workflows, not model validation."),
+            supportsOAuth: false
+        ),
+        ProviderCatalogEntry(
+            slug: "gumroad",
+            displayName: "Gumroad",
+            tagline: "Digital products and short links for agent-created downloads.",
+            symbolName: "cart",
+            keyPrefixHint: "access_token",
+            dashboardURL: URL(string: "https://app.gumroad.com/settings/advanced")!,
+            docsURL: URL(string: "https://app.gumroad.com/api")!,
+            envVar: "GUMROAD_ACCESS_TOKEN",
+            baseURL: URL(string: "https://api.gumroad.com/v2")!,
+            kind: .customProvider(configName: "gumroad"),
+            validation: .skip(reason: "Gumroad tokens are used by product-creation workflows."),
+            supportsOAuth: false
+        ),
+        ProviderCatalogEntry(
+            slug: "aitoearn",
+            displayName: "AiToEarn",
+            tagline: "Social publishing and campaign marketplace MCP for paid task loops.",
+            symbolName: "megaphone",
+            keyPrefixHint: "ait_…",
+            dashboardURL: URL(string: "https://aitoearn.ai")!,
+            docsURL: nil,
+            envVar: "AITOEARN_API_KEY",
+            baseURL: URL(string: "https://aitoearn.ai")!,
+            kind: .customProvider(configName: "aitoearn"),
+            validation: .skip(reason: "AiToEarn is exposed through MCP tools rather than a models endpoint."),
+            supportsOAuth: false
         )
     ]
 

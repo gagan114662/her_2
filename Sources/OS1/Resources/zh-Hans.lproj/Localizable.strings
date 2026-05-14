@@ -999,3 +999,9 @@
 "Realtime Voice" = "Realtime Voice";
 "Toggle Voice Mode" = "Toggle Voice Mode";
 "Voice" = "Voice";
+"Bootstrapping revenue automation..." = "Bootstrapping revenue automation...";
+"Installed crons" = "Installed crons";
+"Revenue automation bootstrapped" = "Revenue automation bootstrapped";
+"Revenue bootstrap needs attention" = "Revenue bootstrap needs attention";
+"Unable to bootstrap revenue automation" = "Unable to bootstrap revenue automation";
+"Unable to load revenue dashboard" = "Unable to load revenue dashboard";

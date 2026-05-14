@@ -1466,7 +1466,7 @@ final class AppState: ObservableObject {
     func loadRevenueDashboard(forceRefresh: Bool = false) async {
         guard let profile = activeConnection else { return }
         if isLoadingRevenue { return }
-        if !forceRefresh, revenueDashboard != nil || revenueError != nil {
+        if !forceRefresh, revenueDashboard != nil {
             return
         }
 

@@ -1005,3 +1005,20 @@
 "Revenue bootstrap needs attention" = "Revenue bootstrap needs attention";
 "Unable to bootstrap revenue automation" = "Unable to bootstrap revenue automation";
 "Unable to load revenue dashboard" = "Unable to load revenue dashboard";
+
+// Revenue metric period labels
+"Today" = "Сегодня";
+"This Week" = "Эта неделя";
+"This Month" = "Этот месяц";
+"All Time" = "За всё время";
+
+// Revenue automation health setup items
+"Mission brief" = "Задание";
+"Revenue log" = "Журнал доходов";
+"Weekly reviewer" = "Еженедельный обзор";
+"n8n healthz" = "n8n healthz";
+"n8n active" = "n8n активен";
+"n8n enabled" = "n8n включён";
+"Cloudflare tunnel" = "Туннель Cloudflare";
+"AiToEarn key" = "Ключ AiToEarn";
+"Social account" = "Соцсети";

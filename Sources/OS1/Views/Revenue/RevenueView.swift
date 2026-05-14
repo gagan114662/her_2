@@ -290,10 +290,6 @@ struct RevenueView: View {
     }
 
     private func amount(_ value: Double, _ currency: String) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = currency
-        formatter.maximumFractionDigits = value.rounded() == value ? 0 : 2
-        return formatter.string(from: NSNumber(value: value)) ?? "\(currency) \(value)"
+        value.formatted(.currency(code: currency).precision(.fractionLength(value.rounded() == value ? 0 : 2)))
     }
 }

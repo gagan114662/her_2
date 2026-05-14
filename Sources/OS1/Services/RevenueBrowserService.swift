@@ -273,7 +273,7 @@ extension RevenueBrowserService {
                 "n8n_service_enabled": n8n_enabled,
                 "cloudflared_enabled": cloudflared_enabled,
                 "public_url": env_value("VM_PUBLIC_URL"),
-                "cron_entries": [line for line in cron_out.splitlines() if "hermes" in line.lower() or "claude" in line.lower() or "review-agent" in line.lower()],
+                "cron_entries": [line for line in cron_out.splitlines() if "hermes" in line.lower() or "claude" in line.lower() or "review-agent" in line.lower() or "revenue-agent" in line.lower()],
                 "aitoearn_configured": bool(env_value("AITOEARN_API_KEY")),
                 "social_accounts_connected": account_count > 0,
             },
@@ -393,7 +393,8 @@ extension RevenueBrowserService {
             errors.append(f"Failed to install revenue crons: {exc}")
 
         try:
-            env_path = pathlib.Path("/etc/environment")
+            env_path = pathlib.Path.home() / ".hermes" / ".env"
+            env_path.parent.mkdir(parents=True, exist_ok=True)
             env_text = env_path.read_text() if env_path.exists() else ""
             additions = []
             if "N8N_API_KEY=" not in env_text:
@@ -409,7 +410,7 @@ extension RevenueBrowserService {
             else:
                 steps.append("environment_present")
         except Exception as exc:
-            errors.append(f"Failed to update /etc/environment: {exc}")
+            errors.append(f"Failed to update ~/.hermes/.env: {exc}")
 
         print(json.dumps({
             "success": len(errors) == 0,

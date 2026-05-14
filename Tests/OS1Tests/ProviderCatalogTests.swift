@@ -47,10 +47,20 @@ struct ProviderCatalogTests {
     }
 
     @Test
-    func sixCoreProvidersPresent() {
-        let expected: Set<String> = ["anthropic", "openrouter", "openai", "fireworks", "kimi", "zai"]
+    func coreAndRevenueProvidersPresent() {
+        let expected: Set<String> = [
+            "anthropic",
+            "openrouter",
+            "openai",
+            "fireworks",
+            "kimi",
+            "zai",
+            "stripe",
+            "gumroad",
+            "aitoearn"
+        ]
         let actual = Set(ProviderCatalog.entries.map(\.slug))
-        #expect(expected.isSubset(of: actual), "Missing one of the 6 core providers. Got: \(actual)")
+        #expect(expected.isSubset(of: actual), "Missing a core or revenue provider. Got: \(actual)")
     }
 
     @Test
@@ -81,6 +91,13 @@ struct ProviderCatalogTests {
     func openAIBaseURLIsCanonical() {
         let openai = ProviderCatalog.entry(for: "openai")
         #expect(openai?.baseURL.absoluteString == "https://api.openai.com/v1")
+    }
+
+    @Test
+    func revenueProvidersExposeExpectedEnvironmentVariables() {
+        #expect(ProviderCatalog.entry(for: "stripe")?.envVar == "STRIPE_SECRET_KEY")
+        #expect(ProviderCatalog.entry(for: "gumroad")?.envVar == "GUMROAD_ACCESS_TOKEN")
+        #expect(ProviderCatalog.entry(for: "aitoearn")?.envVar == "AITOEARN_API_KEY")
     }
 
     @Test

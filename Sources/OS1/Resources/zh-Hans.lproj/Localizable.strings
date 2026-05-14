@@ -999,3 +999,26 @@
 "Realtime Voice" = "Realtime Voice";
 "Toggle Voice Mode" = "Toggle Voice Mode";
 "Voice" = "Voice";
+"Bootstrapping revenue automation..." = "Bootstrapping revenue automation...";
+"Installed crons" = "Installed crons";
+"Revenue automation bootstrapped" = "Revenue automation bootstrapped";
+"Revenue bootstrap needs attention" = "Revenue bootstrap needs attention";
+"Unable to bootstrap revenue automation" = "Unable to bootstrap revenue automation";
+"Unable to load revenue dashboard" = "Unable to load revenue dashboard";
+
+// Revenue metric period labels
+"Today" = "今天";
+"This Week" = "本周";
+"This Month" = "本月";
+"All Time" = "所有时间";
+
+// Revenue automation health setup items
+"Mission brief" = "任务简介";
+"Revenue log" = "收入日志";
+"Weekly reviewer" = "每周审查";
+"n8n healthz" = "n8n healthz";
+"n8n active" = "n8n 已激活";
+"n8n enabled" = "n8n 已启用";
+"Cloudflare tunnel" = "Cloudflare 隧道";
+"AiToEarn key" = "AiToEarn 密钥";
+"Social account" = "社交账户";

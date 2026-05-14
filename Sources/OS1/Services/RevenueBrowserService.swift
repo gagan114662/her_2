@@ -209,15 +209,18 @@ extension RevenueBrowserService {
 
         cron_ok, cron_out = command_ok(["/bin/sh", "-lc", "crontab -l 2>/dev/null || true"])
         n8n_health, _ = command_ok(["/bin/sh", "-lc", "curl -fsS http://localhost:5678/healthz >/dev/null"])
-        n8n_active, _ = command_ok(["systemctl", "is-active", "--quiet", "n8n"])
-        n8n_enabled, _ = command_ok(["systemctl", "is-enabled", "--quiet", "n8n"])
-        cloudflared_enabled, _ = command_ok(["systemctl", "is-enabled", "--quiet", "cloudflared"])
+        # Use process/supervisor checks — systemd is not available in container environments
+        n8n_active, _ = command_ok(["/bin/sh", "-lc", "pgrep -f 'node.*n8n' >/dev/null 2>&1 || supervisorctl status n8n 2>/dev/null | grep -q RUNNING"])
+        n8n_enabled, _ = command_ok(["/bin/sh", "-lc", "supervisorctl status n8n 2>/dev/null | grep -qE 'RUNNING|STARTING' || crontab -l 2>/dev/null | grep -q n8n"])
+        cloudflared_enabled, _ = command_ok(["/bin/sh", "-lc", "pgrep -f cloudflared >/dev/null 2>&1 || supervisorctl status cloudflared 2>/dev/null | grep -q RUNNING"])
 
         env_text = ""
-        try:
-            env_text = pathlib.Path("/etc/environment").read_text()
-        except Exception:
-            pass
+        for env_candidate in [pathlib.Path.home() / ".hermes" / ".env", pathlib.Path("/etc/environment")]:
+            try:
+                env_text = env_candidate.read_text()
+                break
+            except Exception:
+                pass
 
         def env_value(key):
             prefix = key + "="

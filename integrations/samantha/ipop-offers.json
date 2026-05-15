@@ -2,6 +2,21 @@
   "currency": "USD",
   "offers": [
     {
+      "key": "automation_diagnostic",
+      "name": "iPOP Automation Diagnostic",
+      "price": 49,
+      "stripe_product_id": "prod_UWTqK4ACqWYxvO",
+      "stripe_price_id": "price_1TXQsXJOUExxbPnuUZpZXoX8",
+      "payment_link_id": "plink_1TXQsZJOUExxbPnuDtK8g0Sz",
+      "payment_url": "https://buy.stripe.com/dRmfZifbNaqH81J5kI1kA04",
+      "factory_stage": "paid",
+      "proof_required": [
+        "workflow or site audit",
+        "fix plan",
+        "recommended next milestone"
+      ]
+    },
+    {
       "key": "stripe_repair",
       "name": "iPOP Stripe Checkout Repair",
       "price": 149,

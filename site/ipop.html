@@ -53,7 +53,7 @@
     .stat strong { display: block; font-size: 32px; line-height: 1; }
     .stat span { color: var(--muted); font-size: 14px; font-weight: 700; text-transform: uppercase; }
     .section { padding: 36px 0; }
-    .offers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 22px; }
+    .offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 22px; }
     .offer { padding: 20px; display: flex; flex-direction: column; min-height: 340px; }
     .price { font-size: 42px; line-height: 1; font-weight: 900; margin: 16px 0 8px; }
     .offer p { color: var(--muted); margin: 10px 0; }
@@ -112,6 +112,18 @@
     <section class="shell section">
       <h2>Buy An Agent Milestone</h2>
       <div class="offers">
+        <article class="offer">
+          <h3>Automation Diagnostic</h3>
+          <div class="price">$49</div>
+          <p>For one workflow, website, checkout, or automation idea that needs a fast expert read.</p>
+          <ul>
+            <li>Agent-executed audit</li>
+            <li>Concrete fix plan</li>
+            <li>Recommended next milestone</li>
+          </ul>
+          <a class="button" href="https://buy.stripe.com/dRmfZifbNaqH81J5kI1kA04">Pay With Stripe</a>
+        </article>
+
         <article class="offer">
           <h3>Stripe Checkout Repair</h3>
           <div class="price">$149</div>

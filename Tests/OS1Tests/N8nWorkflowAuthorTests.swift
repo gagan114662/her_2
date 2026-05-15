@@ -34,11 +34,14 @@ struct N8nWorkflowAuthorTests {
         #expect(script.contains("n8n-nodes-base.wait"))
         #expect(script.contains("n8n-nodes-base.respondToWebhook"))
         #expect(script.contains("n8n-agent-control.sh"))
+        #expect(script.contains("--prompt <natural-language task>"))
+        #expect(script.contains("with --prompt"))
         #expect(script.contains("stdout_file"))
         #expect(script.contains("workflow must contain at least 8 nodes"))
         #expect(script.contains("N8N_API_KEY"))
         #expect(script.contains("/api/v1/workflows"))
         #expect(script.contains("n8n import:workflow"))
+        #expect(script.contains("JSON.stringify([workflow]"))
         #expect(script.contains("\"active\":true"))
     }
 
@@ -90,6 +93,14 @@ struct N8nWorkflowAuthorTests {
         #expect(json["name"] as? String == "Revenue Followup")
         #expect(nodes.count >= 8)
         #expect(nodes.contains { $0["type"] as? String == "n8n-nodes-base.executeCommand" })
+        #expect(nodes.contains { node in
+            guard node["type"] as? String == "n8n-nodes-base.executeCommand",
+                  let parameters = node["parameters"] as? [String: Any],
+                  let command = parameters["command"] as? String else {
+                return false
+            }
+            return command.contains("n8n-agent-control.sh") && command.contains("--prompt")
+        })
         #expect(nodes.contains { $0["type"] as? String == "n8n-nodes-base.if" })
         #expect(nodes.contains { $0["type"] as? String == "n8n-nodes-base.wait" })
         #expect(connections["Prepare Task"] != nil)

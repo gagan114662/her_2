@@ -294,7 +294,7 @@ generate_agent_workflow() {
 
   local run_meta agent_stdout
   run_meta="$(mktemp)"
-  "$AGENT_BRIDGE" --prompt "Create a production n8n workflow JSON object named '$NAME'. It must solve this task: $PROMPT. Include multiple triggers, branching, retry behavior, a command node that calls $AGENT_BRIDGE, and valid n8n connections. Return only JSON." >"$run_meta"
+  "$AGENT_BRIDGE" --prompt "Create a production n8n workflow JSON object named '$NAME'. It must solve this task: $PROMPT. Include multiple triggers, branching, retry behavior, and valid n8n connections. Every Execute Command node must call the bridge exactly as $AGENT_BRIDGE --prompt <natural-language task>; do not invent bridge subcommands or inline secrets. Return only JSON." >"$run_meta"
   agent_stdout="$(node - "$run_meta" <<'NODE'
 const fs = require("fs");
 const meta = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
@@ -344,6 +344,9 @@ for (const node of nodes) {
     commandCount += 1;
     const command = String((node.parameters || {}).command || "");
     if (!command.includes("n8n-agent-control.sh")) errors.push("executeCommand nodes must call n8n-agent-control.sh");
+    if (!/\bn8n-agent-control\.sh\b[\s\S]*\s--prompt\s+/.test(command)) {
+      errors.push("executeCommand nodes must call n8n-agent-control.sh with --prompt");
+    }
   }
   if (node.type === "n8n-nodes-base.if") hasBranch = true;
   if (node.type === "n8n-nodes-base.wait" || /retry/i.test(node.name || "")) hasRetry = true;
@@ -385,17 +388,13 @@ api_import_workflow() {
   import_payload="$(mktemp)"
   response_file="$(mktemp)"
 
-  if [[ "$ACTIVATE_WORKFLOW" == true ]]; then
-    node - "$OUTPUT" "$import_payload" <<'NODE'
+  node - "$OUTPUT" "$import_payload" "$ACTIVATE_WORKFLOW" <<'NODE'
 const fs = require("fs");
-const [input, output] = process.argv.slice(2);
+const [input, output, activeRequested] = process.argv.slice(2);
 const workflow = JSON.parse(fs.readFileSync(input, "utf8"));
-workflow.active = true;
+workflow.active = activeRequested === "true";
 fs.writeFileSync(output, JSON.stringify(workflow, null, 2) + "\n");
 NODE
-  else
-    cp "$OUTPUT" "$import_payload"
-  fi
 
   status="$(curl -sS -o "$response_file" -w '%{http_code}' \
     -X POST "${N8N_URL}/api/v1/workflows" \
@@ -438,17 +437,13 @@ NODE
 cli_import_workflow() {
   local import_payload
   import_payload="$(mktemp)"
-  if [[ "$ACTIVATE_WORKFLOW" == true ]]; then
-    node - "$OUTPUT" "$import_payload" <<'NODE'
+  node - "$OUTPUT" "$import_payload" "$ACTIVATE_WORKFLOW" <<'NODE'
 const fs = require("fs");
-const [input, output] = process.argv.slice(2);
+const [input, output, activeRequested] = process.argv.slice(2);
 const workflow = JSON.parse(fs.readFileSync(input, "utf8"));
-workflow.active = true;
-fs.writeFileSync(output, JSON.stringify(workflow, null, 2) + "\n");
+workflow.active = activeRequested === "true";
+fs.writeFileSync(output, JSON.stringify([workflow], null, 2) + "\n");
 NODE
-  else
-    cp "$OUTPUT" "$import_payload"
-  fi
 
   n8n import:workflow --input "$import_payload"
   printf '{"ok":true,"via":"n8n-cli","active_requested":%s,"workflow_file":%s}\n' \

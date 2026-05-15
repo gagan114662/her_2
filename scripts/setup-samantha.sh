@@ -277,29 +277,44 @@ log "7/8  Installing Codex auth refresh and MCP bridges"
 install -m755 "$INT/codex-token-refresh.py" /root/codex-token-refresh.py
 install -m755 "$INT/restore-codex-auth.sh" /root/restore-codex-auth.sh
 install -m755 "$INT/hermes-tools-mcp.py" /root/hermes-tools-mcp.py
+install -m755 "$INT/aitoearn-mcp-proxy.py" /root/aitoearn-mcp-proxy.py
 install -m644 "$INT/restore-codex-auth.conf" /etc/supervisor/conf.d/restore-codex-auth.conf
 CODEX_CFG="/root/.codex/config.toml"
 touch "$CODEX_CFG"
-if ! grep -qF "[mcp_servers.hermes-tools]" "$CODEX_CFG"; then
-  cat "$INT/codex-config-additions.toml" >> "$CODEX_CFG"
-fi
+python3 - <<'PY5'
+import os
+from pathlib import Path
+
+cfg_path = Path("/root/.codex/config.toml")
+cfg = cfg_path.read_text(errors="replace")
+replace_sections = ("[mcp_servers.aitoearn]", "[mcp_servers.aitoearn.headers]")
+blocks = (
+    ("[mcp_servers.hermes-tools]", '[mcp_servers.hermes-tools]\\ncommand = "/root/hermes-tools-mcp.py"\\nargs = []'),
+    ("[mcp_servers.playwright]", '[mcp_servers.playwright]\\ncommand = "npx"\\nargs = ["@playwright/mcp", "--headless"]'),
+    ("[mcp_servers.aitoearn]", '[mcp_servers.aitoearn]\\ncommand = "/root/aitoearn-mcp-proxy.py"\\nargs = []'),
+)
+
+lines = []
+skipping = False
+for line in cfg.splitlines():
+    stripped = line.strip()
+    if stripped.startswith("[") and stripped.endswith("]"):
+        skipping = stripped in replace_sections
+    if skipping:
+        continue
+    lines.append(line)
+cfg = "\\n".join(lines).rstrip() + "\\n"
+
+for section, block in blocks:
+    if section not in cfg:
+        cfg = cfg.rstrip() + "\\n\\n" + block.strip() + "\\n"
+
+cfg_path.write_text(cfg)
+PY5
 chmod 600 "$CODEX_CFG"
 CRON_JOB="0 * * * * /root/restore-codex-auth.sh >> /tmp/codex-token-refresh-cron.log 2>&1"
 ( crontab -l 2>/dev/null | grep -v "restore-codex-auth" || true; echo "$CRON_JOB" ) | crontab -
 step "Codex refresh and MCP bridges installed."
-
-if ! grep -qF "[mcp_servers.playwright]" "$CODEX_CFG" 2>/dev/null; then
-  cat >> "$CODEX_CFG" << TOML
-
-[mcp_servers.playwright]
-command = "npx"
-args = ["@playwright/mcp", "--headless"]
-TOML
-  step "playwright MCP added to Codex config"
-else
-  step "playwright MCP already present"
-fi
-
 
 # ---------------------------------------------------------------------------
 # 6.5 Install Upwork Autopilot Chrome launcher

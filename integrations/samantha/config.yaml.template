@@ -31,9 +31,8 @@ group_sessions_per_user: true
 hooks_auto_accept: true
 mcp_servers:
   aitoearn:
-    headers:
-      x-api-key: ${AITOEARN_API_KEY}
-    url: https://aitoearn.ai/api/unified/mcp
+    command: /root/aitoearn-mcp-proxy.py
+    args: []
   composio:
     headers:
       x-consumer-api-key: ${COMPOSIO_API_KEY}

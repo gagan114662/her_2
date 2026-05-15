@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "aitoearn": {
-      "type": "http",
-      "url": "https://aitoearn.ai/api/unified/mcp",
-      "headers": {
-        "x-api-key": "${AITOEARN_API_KEY}"
-      }
+      "command": "/root/aitoearn-mcp-proxy.py",
+      "args": []
     },
     "playwright": {
       "command": "npx",

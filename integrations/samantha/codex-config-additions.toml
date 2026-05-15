@@ -8,3 +8,7 @@ args = []
 [mcp_servers.playwright]
 command = "npx"
 args = ["@playwright/mcp", "--headless"]
+
+[mcp_servers.aitoearn]
+command = "/root/aitoearn-mcp-proxy.py"
+args = []

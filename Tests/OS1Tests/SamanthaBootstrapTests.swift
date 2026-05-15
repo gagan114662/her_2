@@ -38,6 +38,10 @@ struct SamanthaBootstrapTests {
         #expect(script.contains("NousResearch/hermes-agent/main/scripts/install.sh"))
         #expect(script.contains("CODEX_OK"))
         #expect(script.contains("Local Keychain codex.refresh-token updated after remote rotation."))
+        #expect(script.contains("[mcp_servers.aitoearn]"))
+        #expect(script.contains("aitoearn-mcp-proxy.py"))
+        #expect(script.contains("[mcp_servers.aitoearn.headers]"))
+        #expect(script.contains("AITOEARN_API_KEY"))
     }
 
     @Test
@@ -50,14 +54,39 @@ struct SamanthaBootstrapTests {
         #expect(!script.contains("echo \"$COMPOSIO_API_KEY"))
     }
 
+    @Test
+    func aitoearnUsesLocalProxyInAllRuntimeTemplates() throws {
+        let repoRoot = try repoRootURL()
+        let hermesConfig = try String(
+            contentsOf: repoRoot.appendingPathComponent("integrations/samantha/config.yaml.template"),
+            encoding: .utf8
+        )
+        let claudeConfig = try String(
+            contentsOf: repoRoot.appendingPathComponent("integrations/samantha/claude_desktop_config.json.template"),
+            encoding: .utf8
+        )
+        let codexConfig = try String(
+            contentsOf: repoRoot.appendingPathComponent("integrations/samantha/codex-config-additions.toml"),
+            encoding: .utf8
+        )
+
+        for template in [hermesConfig, claudeConfig, codexConfig] {
+            #expect(template.contains("/root/aitoearn-mcp-proxy.py"))
+            #expect(!template.contains("https://aitoearn.ai/api/unified/mcp"))
+        }
+    }
+
     private func setupScriptPath() throws -> URL {
-        let current = URL(fileURLWithPath: #filePath)
-        let repoRoot = current
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let script = repoRoot.appendingPathComponent("scripts/setup-samantha.sh")
+        let script = try repoRootURL().appendingPathComponent("scripts/setup-samantha.sh")
         #expect(FileManager.default.fileExists(atPath: script.path))
         return script
+    }
+
+    private func repoRootURL() throws -> URL {
+        let current = URL(fileURLWithPath: #filePath)
+        return current
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
     }
 }

@@ -24,6 +24,11 @@ Set these with `wrangler secret put`; do not commit their values.
 - `STRIPE_WEBHOOK_SECRET`: signing secret from the live Stripe webhook endpoint.
 - `ADMIN_READ_TOKEN`: token required by `GET /events?token=...`.
 
+GitHub Actions also needs these repository secrets to deploy from `main`:
+
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN` with Workers Scripts edit and D1 edit permissions.
+
 ## Deploy
 
 ```sh
@@ -31,6 +36,10 @@ npm install
 npx wrangler d1 migrations apply mathematricks_stripe_events --remote
 npx wrangler deploy
 ```
+
+Merges to `main` deploy automatically through
+`.github/workflows/deploy-mathematricks-stripe-worker.yml` once the GitHub
+Actions Cloudflare secrets are configured.
 
 ## Verify
 

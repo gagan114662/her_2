@@ -6,6 +6,8 @@ This log tracks live revenue actions for iPOP and DesignGaga offers.
 
 - iPOP Automation Diagnostic: https://gagan114662.github.io/her_2/ipop.html
 - iPOP Listing Prep Agent Sprint: https://gagan114662.github.io/her_2/listing-prep-agent-sprint.html
+- iPOP real-domain paid work page: https://ipop.ai/#work
+- iPOP Agent Trial Sprint: https://buy.stripe.com/eVq9AUfbN0Q72HpaF21kA07
 - DesignGaga Home Staging Quick Consult: https://gagan114662.github.io/her_2/designgaga-consult.html
 
 ## Stripe Status
@@ -14,6 +16,7 @@ This log tracks live revenue actions for iPOP and DesignGaga offers.
 - 2026-05-15: Balance checked after outreach batches: 0 available, 0 pending, no payment intents.
 - 2026-05-15: Gmail reply/bounce check found one hard bounce and no buyer replies.
 - 2026-05-15: Created iPOP Listing Prep Agent Sprint live Stripe link for CAD 49: https://buy.stripe.com/cNicN64x9fL1a9RbJ61kA06
+- 2026-05-15: Added paid agent-work offers to ipop.ai and created a USD 19 Agent Trial Sprint checkout: https://buy.stripe.com/eVq9AUfbN0Q72HpaF21kA07
 
 ## Sent Outreach
 
@@ -58,9 +61,21 @@ This log tracks live revenue actions for iPOP and DesignGaga offers.
 - homes@alexandramaurice.ca — Correction: agent-delivered listing prep sprint
 - info@classicrealtygroup.ca — Correction: agent-delivered listing prep sprint
 
+### 2026-05-15 iPOP Agent Trial Sprint
+
+- prashant@rapida.ai — Tiny $19 agent-work trial is live
+- chaitanya@getcreatr.com — Tiny $19 agent-work trial is live
+- harish.h@razorpay.com — Tiny $19 agent-work trial is live
+- bob.pardo@pardo.space — Tiny $19 agent-work trial is live
+- kirk@graphlit.com — Tiny $19 agent-work trial is live
+- hello@returnmytime.com — Tiny $19 agent-work trial is live
+- nexustrade@starks-technology.com — Tiny $19 agent-work trial is live
+- fatima@okara.ai — Tiny $19 agent-work trial is live
+
 ## Known Funnel Issues
 
 - designgaga.ca currently has no public DNS answers and CIRA WHOIS returns Not found.
 - WordPress/WPWriter has no connected DesignGaga site, so current public landing is GitHub Pages.
 - adi@newsletter.agentmail.to bounced because the domain newsletter.agentmail.to could not be found.
 - Future revenue outreach should prefer iPOP/Samantha delivery-machine offers over offers that imply Gagan personally performs the service work.
+- ipop.ai is the preferred public URL for new outreach because it is the owned domain and now links directly to paid Stripe agent-work offers.

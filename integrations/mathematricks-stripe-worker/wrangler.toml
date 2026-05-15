@@ -1,0 +1,11 @@
+name = "mathematricks-stripe-webhook"
+main = "src/index.ts"
+compatibility_date = "2024-12-24"
+
+[vars]
+EXPECTED_COMPANY_ID = "4731311e"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mathematricks_stripe_events"
+database_id = "d12e7f2a-955f-4bfa-91df-759fda5deb50"

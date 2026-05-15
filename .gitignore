@@ -9,6 +9,7 @@
 /packaging/AppIcon-1024.png
 /packaging/AppIcon.iconset/
 /Packages
+node_modules/
 xcuserdata/
 DerivedData/
 .swiftpm/configuration/registries.json

@@ -27,7 +27,7 @@ struct N8nAgentControlBridgeTests {
         let script = try String(contentsOf: bridgeScriptPath(), encoding: .utf8)
 
         #expect(script.contains("SAMANTHA_AGENT_CONTROL_MODE:-full"))
-        #expect(script.contains("SAMANTHA_AGENT_RUNTIME:-auto"))
+        #expect(script.contains("SAMANTHA_AGENT_RUNTIME:-codex"))
         #expect(script.contains("/root/.hermes/logs/n8n-agent-control"))
         #expect(script.contains("SAMANTHA_AGENT_WORKDIR:-/root"))
         #expect(script.contains("cd \"$WORKDIR\""))

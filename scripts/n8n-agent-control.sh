@@ -9,7 +9,7 @@ Usage:
 
 Environment:
   SAMANTHA_AGENT_CONTROL_MODE=full|dry-run   Default: full
-  SAMANTHA_AGENT_RUNTIME=auto|hermes|codex   Default: auto
+  SAMANTHA_AGENT_RUNTIME=codex|auto|hermes   Default: codex
   SAMANTHA_AGENT_WORKDIR=/root               Default: /root
   SAMANTHA_AGENT_LOG_DIR=/root/.hermes/logs/n8n-agent-control
   SAMANTHA_AGENT_TIMEOUT_SECONDS=900
@@ -18,7 +18,7 @@ USAGE
 }
 
 CONTROL_MODE="${SAMANTHA_AGENT_CONTROL_MODE:-full}"
-RUNTIME="${SAMANTHA_AGENT_RUNTIME:-auto}"
+RUNTIME="${SAMANTHA_AGENT_RUNTIME:-codex}"
 WORKDIR="${SAMANTHA_AGENT_WORKDIR:-/root}"
 LOG_DIR="${SAMANTHA_AGENT_LOG_DIR:-/root/.hermes/logs/n8n-agent-control}"
 MAX_SECONDS="${SAMANTHA_AGENT_TIMEOUT_SECONDS:-900}"

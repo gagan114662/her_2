@@ -1,0 +1,50 @@
+{
+  "currency": "USD",
+  "offers": [
+    {
+      "key": "stripe_repair",
+      "name": "iPOP Stripe Checkout Repair",
+      "price": 149,
+      "stripe_product_id": "prod_UWTQAzG49PNEF5",
+      "stripe_price_id": "price_1TXQTUJOUExxbPnumsM3eHt4",
+      "payment_link_id": "plink_1TXQTWJOUExxbPnusqNr2Xzo",
+      "payment_url": "https://buy.stripe.com/4gM00k1kX2Yf1Dl4gE1kA01",
+      "factory_stage": "paid",
+      "proof_required": [
+        "diagnosis",
+        "webhook or checkout proof",
+        "delivery note"
+      ]
+    },
+    {
+      "key": "n8n_automation",
+      "name": "iPOP n8n Automation Build",
+      "price": 249,
+      "stripe_product_id": "prod_UWTQnT4UNJca13",
+      "stripe_price_id": "price_1TXQTZJOUExxbPnuofQHyEng",
+      "payment_link_id": "plink_1TXQTcJOUExxbPnuErVrqwSE",
+      "payment_url": "https://buy.stripe.com/7sYaEYbZB7ev95NcNa1kA02",
+      "factory_stage": "paid",
+      "proof_required": [
+        "workflow JSON",
+        "run or validation log",
+        "handoff note"
+      ]
+    },
+    {
+      "key": "wordpress_fix",
+      "name": "iPOP WordPress Fix Pack",
+      "price": 199,
+      "stripe_product_id": "prod_UWTQ0Se4vYVfKD",
+      "stripe_price_id": "price_1TXQTgJOUExxbPnuwof1xrjU",
+      "payment_link_id": "plink_1TXQThJOUExxbPnu8f7StluZ",
+      "payment_url": "https://buy.stripe.com/8x2dRa4x98izgyf4gE1kA03",
+      "factory_stage": "paid",
+      "proof_required": [
+        "before and after proof",
+        "QA checklist",
+        "delivery note"
+      ]
+    }
+  ]
+}

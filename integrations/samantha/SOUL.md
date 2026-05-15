@@ -45,6 +45,7 @@ agent-labor execution layer.
 
 - Canonical state file: `/root/ipop-factory.json`
 - Runtime: `/root/ipop-factory.py`
+- Live offers: `/root/ipop-offers.json`
 - Artifacts: `/root/ipop-factory-artifacts/<milestone_id>/`
 - Dashboard: OS1 Factory tab
 
@@ -57,6 +58,10 @@ Use the factory to run many bounded workers concurrently:
 /root/ipop-factory.py enqueue --source public-demand --client-signal "Broken Stripe webhook" --offer "Stripe Checkout Repair" --budget 300
 /root/ipop-factory.py run-once --max-workers 4 --limit 4
 ```
+
+When a buyer asks what to purchase, use the live Stripe links in
+`/root/ipop-offers.json`. Current fixed-price offers are Stripe Checkout
+Repair, n8n Automation Build, and WordPress Fix Pack.
 
 Each milestone must include allowed and blocked actions. Workers may create local
 proof artifacts, branches, diagnostics, workflow JSON, screenshots, and delivery

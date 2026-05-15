@@ -279,6 +279,7 @@ install -m755 "$INT/restore-codex-auth.sh" /root/restore-codex-auth.sh
 install -m755 "$INT/hermes-tools-mcp.py" /root/hermes-tools-mcp.py
 install -m755 "$INT/aitoearn-mcp-proxy.py" /root/aitoearn-mcp-proxy.py
 install -m755 "$INT/ipop-factory.py" /root/ipop-factory.py
+install -m644 "$INT/ipop-offers.json" /root/ipop-offers.json
 install -m644 "$INT/restore-codex-auth.conf" /etc/supervisor/conf.d/restore-codex-auth.conf
 install -m644 "$INT/ipop-factory.conf" /etc/supervisor/conf.d/ipop-factory.conf
 python3 /root/ipop-factory.py init --max-workers 4 >/dev/null

@@ -245,7 +245,7 @@ struct RootView: View {
         guard let connection = appState.activeConnection else {
             return [.connections]
         }
-        var sections: [AppSection] = [.connections, .overview, .sessions, .cronjobs, .kanban, .revenue, .files, .usage, .skills, .knowledgeBase, .connectors, .providers, .mail, .messaging, .terminal, .doctor]
+        var sections: [AppSection] = [.connections, .overview, .sessions, .cronjobs, .kanban, .factory, .revenue, .files, .usage, .skills, .knowledgeBase, .connectors, .providers, .mail, .messaging, .terminal, .doctor]
         // Desktop is only meaningful for Orgo VMs (SSH hosts have no VM screen).
         if case .orgo = connection.transport {
             sections.append(.desktop)
@@ -276,6 +276,8 @@ struct RootView: View {
             CronJobsView(splitLayout: $cronJobsSplitLayout)
         case .kanban:
             KanbanView(splitLayout: $kanbanSplitLayout)
+        case .factory:
+            FactoryView()
         case .revenue:
             RevenueView()
         case .usage:

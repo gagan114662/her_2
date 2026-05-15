@@ -142,6 +142,16 @@ else
   step "playwright MCP already present"
 fi
 
+
+# ---------------------------------------------------------------------------
+# 6.5 Install Upwork Autopilot Chrome launcher
+# ---------------------------------------------------------------------------
+log "6.5/8  Install Upwork Autopilot Chrome launcher"
+install -m755 "$INT/launch-upwork-chrome.sh" /root/launch-upwork-chrome.sh
+step "launch-upwork-chrome.sh installed (Toronto proxy + anti-detect + persistent profile)"
+step "  Launch with: tmux new -d -s upwork-chrome /root/launch-upwork-chrome.sh"
+step "  Then log in via VNC (one-time), session persists at /root/.browser-sessions/upwork-autopilot"
+
 # ---------------------------------------------------------------------------
 # 7. Install remaining supervisor services
 # ---------------------------------------------------------------------------
@@ -169,3 +179,4 @@ echo "  tail /tmp/claude-bridge.log"
 echo "  tail /tmp/restore-codex-auth.log"
 echo "  codex exec --skip-git-repo-check \"say CODEX_OK\""
 echo "================================================================"
+

@@ -1,0 +1,10 @@
+# Append these blocks to ~/.codex/config.toml on the Samantha VM.
+# The setup-samantha.sh script does this automatically.
+
+[mcp_servers.hermes-tools]
+command = "/root/hermes-tools-mcp.py"
+args = []
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp", "--headless"]

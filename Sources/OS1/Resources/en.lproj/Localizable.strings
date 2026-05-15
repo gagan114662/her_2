@@ -1006,6 +1006,7 @@
 "Revenue bootstrap needs attention" = "Revenue bootstrap needs attention";
 "Unable to bootstrap revenue automation" = "Unable to bootstrap revenue automation";
 "Unable to load revenue dashboard" = "Unable to load revenue dashboard";
+"Unable to load factory dashboard" = "Unable to load factory dashboard";
 
 // Revenue metric period labels
 "Today" = "Today";

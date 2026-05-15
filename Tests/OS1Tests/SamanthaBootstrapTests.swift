@@ -42,6 +42,9 @@ struct SamanthaBootstrapTests {
         #expect(script.contains("aitoearn-mcp-proxy.py"))
         #expect(script.contains("[mcp_servers.aitoearn.headers]"))
         #expect(script.contains("AITOEARN_API_KEY"))
+        #expect(script.contains("ipop-factory.py"))
+        #expect(script.contains("ipop-factory.conf"))
+        #expect(script.contains("ipop-factory.py init --max-workers 4"))
     }
 
     @Test
@@ -74,6 +77,30 @@ struct SamanthaBootstrapTests {
             #expect(template.contains("/root/aitoearn-mcp-proxy.py"))
             #expect(!template.contains("https://aitoearn.ai/api/unified/mcp"))
         }
+    }
+
+    @Test
+    func ipopFactoryRuntimeIsFileBackedAndParallel() throws {
+        let repoRoot = try repoRootURL()
+        let runtime = try String(
+            contentsOf: repoRoot.appendingPathComponent("integrations/samantha/ipop-factory.py"),
+            encoding: .utf8
+        )
+        let supervisor = try String(
+            contentsOf: repoRoot.appendingPathComponent("integrations/samantha/ipop-factory.conf"),
+            encoding: .utf8
+        )
+
+        #expect(runtime.contains("DEFAULT_STATE_PATH"))
+        #expect(runtime.contains("/root/ipop-factory.json"))
+        #expect(runtime.contains("ThreadPoolExecutor"))
+        #expect(runtime.contains("allowed_actions"))
+        #expect(runtime.contains("blocked_actions"))
+        #expect(runtime.contains("Do not send messages, submit proposals, publish externally"))
+        #expect(runtime.contains("run-once"))
+        #expect(runtime.contains("loop"))
+        #expect(supervisor.contains("[program:ipop-factory]"))
+        #expect(supervisor.contains("/root/ipop-factory.py loop"))
     }
 
     private func setupScriptPath() throws -> URL {

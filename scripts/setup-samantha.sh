@@ -278,7 +278,10 @@ install -m755 "$INT/codex-token-refresh.py" /root/codex-token-refresh.py
 install -m755 "$INT/restore-codex-auth.sh" /root/restore-codex-auth.sh
 install -m755 "$INT/hermes-tools-mcp.py" /root/hermes-tools-mcp.py
 install -m755 "$INT/aitoearn-mcp-proxy.py" /root/aitoearn-mcp-proxy.py
+install -m755 "$INT/ipop-factory.py" /root/ipop-factory.py
 install -m644 "$INT/restore-codex-auth.conf" /etc/supervisor/conf.d/restore-codex-auth.conf
+install -m644 "$INT/ipop-factory.conf" /etc/supervisor/conf.d/ipop-factory.conf
+python3 /root/ipop-factory.py init --max-workers 4 >/dev/null
 CODEX_CFG="/root/.codex/config.toml"
 touch "$CODEX_CFG"
 python3 - <<'PY5'
@@ -312,8 +315,9 @@ for section, block in blocks:
 cfg_path.write_text(cfg)
 PY5
 chmod 600 "$CODEX_CFG"
-CRON_JOB="0 * * * * /root/restore-codex-auth.sh >> /tmp/codex-token-refresh-cron.log 2>&1"
-( crontab -l 2>/dev/null | grep -v "restore-codex-auth" || true; echo "$CRON_JOB" ) | crontab -
+CODEX_CRON_JOB="0 * * * * /root/restore-codex-auth.sh >> /tmp/codex-token-refresh-cron.log 2>&1"
+FACTORY_CRON_JOB="*/5 * * * * /root/ipop-factory.py run-once --max-workers 4 --limit 4 >> /tmp/ipop-factory-cron.log 2>&1"
+( crontab -l 2>/dev/null | grep -v "restore-codex-auth" | grep -v "ipop-factory.py" || true; echo "$CODEX_CRON_JOB"; echo "$FACTORY_CRON_JOB" ) | crontab -
 step "Codex refresh and MCP bridges installed."
 
 # ---------------------------------------------------------------------------
@@ -326,12 +330,12 @@ step "  Launch with: tmux new -d -s upwork-chrome /root/launch-upwork-chrome.sh"
 step "  Then log in via VNC (one-time), session persists at /root/.browser-sessions/upwork-autopilot"
 
 log "8/8  Installing supervisor services and running initial refresh"
-for conf in claude-bridge crond sshd; do
+for conf in claude-bridge crond sshd ipop-factory; do
   install -m644 "$INT/$conf.conf" "/etc/supervisor/conf.d/$conf.conf"
 done
 supervisorctl reread >/dev/null 2>&1 || true
 supervisorctl update >/dev/null 2>&1 || true
-supervisorctl restart fix-dns restore-codex-auth claude-bridge crond sshd >/dev/null 2>&1 || true
+supervisorctl restart fix-dns restore-codex-auth claude-bridge crond sshd ipop-factory >/dev/null 2>&1 || true
 python3 /root/codex-token-refresh.py
 if [[ {str(smoke).lower()} == true ]]; then
   set +e

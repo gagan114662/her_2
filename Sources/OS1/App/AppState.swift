@@ -90,6 +90,10 @@ final class AppState: ObservableObject {
     @Published var isSavingKanbanTaskDraft = false
     @Published var isDispatchingKanban = false
     @Published var includeArchivedKanbanTasks = false
+    @Published var factoryDashboard: FactoryDashboard?
+    @Published var factoryError: String?
+    @Published var isLoadingFactory = false
+    @Published var isRefreshingFactory = false
     @Published var revenueDashboard: RevenueDashboard?
     @Published var revenueError: String?
     @Published var isLoadingRevenue = false
@@ -123,6 +127,7 @@ final class AppState: ObservableObject {
     let knowledgeBaseService: KnowledgeBaseService
     let cronBrowserService: CronBrowserService
     let kanbanBrowserService: KanbanBrowserService
+    let factoryBrowserService: FactoryBrowserService
     let revenueBrowserService: RevenueBrowserService
     let terminalWorkspace: TerminalWorkspaceStore
     let agentMailCredentialStore: AgentMailCredentialStore
@@ -191,6 +196,7 @@ final class AppState: ObservableObject {
         self.knowledgeBaseService = KnowledgeBaseService(transport: transport)
         self.cronBrowserService = CronBrowserService(transport: transport)
         self.kanbanBrowserService = KanbanBrowserService(transport: transport)
+        self.factoryBrowserService = FactoryBrowserService(transport: transport)
         self.revenueBrowserService = RevenueBrowserService(transport: transport)
         self.terminalWorkspace = TerminalWorkspaceStore(
             sshTransport: sshTransport,
@@ -418,6 +424,8 @@ final class AppState: ObservableObject {
             return !isLoadingCronJobs && !isRefreshingCronJobs
         case .kanban:
             return !isLoadingKanbanBoard && !isRefreshingKanbanBoard
+        case .factory:
+            return !isLoadingFactory && !isRefreshingFactory
         case .revenue:
             return !isLoadingRevenue && !isRefreshingRevenue
         case .usage:
@@ -512,6 +520,8 @@ final class AppState: ObservableObject {
             await refreshCronJobs()
         case .kanban:
             await refreshKanbanBoard()
+        case .factory:
+            await refreshFactoryDashboard(manual: true)
         case .revenue:
             await refreshRevenueDashboard(manual: true)
         case .usage:
@@ -884,6 +894,17 @@ final class AppState: ObservableObject {
         isRefreshingKanbanBoard = true
         await loadKanbanBoard(includeArchived: includeArchived)
         isRefreshingKanbanBoard = false
+    }
+
+    func refreshFactoryDashboard(manual: Bool = false) async {
+        guard !isLoadingFactory, !isRefreshingFactory else { return }
+        if manual {
+            isRefreshingFactory = true
+        }
+        await loadFactoryDashboard(forceRefresh: true)
+        if manual {
+            isRefreshingFactory = false
+        }
     }
 
     func refreshRevenueDashboard(manual: Bool = false) async {
@@ -1484,6 +1505,30 @@ final class AppState: ObservableObject {
             isLoadingRevenue = false
             revenueError = error.localizedDescription
             setStatusMessage(L10n.string("Unable to load revenue dashboard"))
+        }
+    }
+
+    func loadFactoryDashboard(forceRefresh: Bool = false) async {
+        guard let profile = activeConnection else { return }
+        if isLoadingFactory { return }
+        if !forceRefresh, factoryDashboard != nil {
+            return
+        }
+
+        isLoadingFactory = true
+        factoryError = nil
+
+        do {
+            let dashboard = try await factoryBrowserService.loadDashboard(connection: profile)
+            guard isActiveWorkspace(profile) else { return }
+            factoryDashboard = dashboard
+            isLoadingFactory = false
+        } catch {
+            guard isActiveWorkspace(profile) else { return }
+            factoryDashboard = nil
+            isLoadingFactory = false
+            factoryError = error.localizedDescription
+            setStatusMessage(L10n.string("Unable to load factory dashboard"))
         }
     }
 
@@ -2231,6 +2276,8 @@ final class AppState: ObservableObject {
             Task { await loadCronJobs() }
         case .kanban:
             Task { await loadKanbanBoard() }
+        case .factory:
+            Task { await loadFactoryDashboard() }
         case .revenue:
             Task { await loadRevenueDashboard() }
         case .usage:
@@ -2295,6 +2342,8 @@ final class AppState: ObservableObject {
             await loadCronJobs()
         case .kanban:
             await loadKanbanBoard()
+        case .factory:
+            await loadFactoryDashboard(forceRefresh: true)
         case .revenue:
             await loadRevenueDashboard(forceRefresh: true)
         case .usage:
@@ -2613,6 +2662,10 @@ final class AppState: ObservableObject {
         isSavingKanbanTaskDraft = false
         isDispatchingKanban = false
         includeArchivedKanbanTasks = false
+        factoryDashboard = nil
+        factoryError = nil
+        isLoadingFactory = false
+        isRefreshingFactory = false
         revenueDashboard = nil
         revenueError = nil
         isLoadingRevenue = false

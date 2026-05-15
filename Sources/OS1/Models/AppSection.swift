@@ -7,6 +7,7 @@ enum AppSection: String, CaseIterable, Identifiable {
     case sessions
     case cronjobs
     case kanban
+    case factory
     case revenue
     case usage
     case skills
@@ -39,6 +40,8 @@ enum AppSection: String, CaseIterable, Identifiable {
             "Cron Jobs"
         case .kanban:
             "Kanban"
+        case .factory:
+            "Factory"
         case .revenue:
             "Revenue"
         case .usage:
@@ -78,6 +81,8 @@ enum AppSection: String, CaseIterable, Identifiable {
             "calendar.badge.clock"
         case .kanban:
             "rectangle.3.group"
+        case .factory:
+            "person.3.sequence"
         case .revenue:
             "dollarsign.arrow.circlepath"
         case .usage:

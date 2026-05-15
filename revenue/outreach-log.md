@@ -49,7 +49,7 @@ This log tracks live revenue actions for iPOP and DesignGaga offers.
 - sarah@sarahlogue.ca — Quick $49 staging consult for listings — superseded by iPOP correction
 - lisa@lisaweberteam.ca — Quick $49 staging consult for listings — superseded by iPOP correction
 - homes@alexandramaurice.ca — Quick $49 staging consult for listings — superseded by iPOP correction
-- info@classicrealtygroup.ca — Quick $49 staging consult for listings — superseded by iPOP correction
+- info@classicrealtygroup.ca — Quick $49 staging consult for listings — bounced, address not found
 
 ### 2026-05-15 iPOP Listing Prep Agent Sprint
 
@@ -59,7 +59,7 @@ This log tracks live revenue actions for iPOP and DesignGaga offers.
 - sarah@sarahlogue.ca — Correction: agent-delivered listing prep sprint
 - lisa@lisaweberteam.ca — Correction: agent-delivered listing prep sprint
 - homes@alexandramaurice.ca — Correction: agent-delivered listing prep sprint
-- info@classicrealtygroup.ca — Correction: agent-delivered listing prep sprint
+- info@classicrealtygroup.ca — Correction: agent-delivered listing prep sprint — bounced, address not found
 
 ### 2026-05-15 iPOP Agent Trial Sprint
 
@@ -77,5 +77,6 @@ This log tracks live revenue actions for iPOP and DesignGaga offers.
 - designgaga.ca currently has no public DNS answers and CIRA WHOIS returns Not found.
 - WordPress/WPWriter has no connected DesignGaga site, so current public landing is GitHub Pages.
 - adi@newsletter.agentmail.to bounced because the domain newsletter.agentmail.to could not be found.
+- info@classicrealtygroup.ca bounced because the address could not be found or is unable to receive mail.
 - Future revenue outreach should prefer iPOP/Samantha delivery-machine offers over offers that imply Gagan personally performs the service work.
 - ipop.ai is the preferred public URL for new outreach because it is the owned domain and now links directly to paid Stripe agent-work offers.

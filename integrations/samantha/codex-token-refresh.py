@@ -149,10 +149,7 @@ def main() -> None:
 
     # Rotate the refresh token before it's invalidated
     rotate_env(ENV_FILE, "CODEX_REFRESH_TOKEN", data["refresh_token"])
-    log.info(
-        "Token rotation complete. New RT prefix: %s…",
-        data["refresh_token"][:20],
-    )
+    log.info("Token rotation complete.")
 
 
 if __name__ == "__main__":

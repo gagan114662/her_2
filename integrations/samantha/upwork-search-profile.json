@@ -1,0 +1,49 @@
+{
+  "_strategy": "See integrations/samantha/upwork-strategy.md. New-profile thesis: small fixed-price technical one-shots, sub-30-min response, <10 proposals.",
+  "keywords": [
+    "Python web scraper Playwright",
+    "BeautifulSoup scraping data extraction",
+    "fix broken scraper Python Playwright",
+    "Selenium scraper debug fix",
+    "OpenAI API CSV enrichment",
+    "Claude API integration script",
+    "GPT email classification automation",
+    "Zapier make.com automation fix",
+    "n8n workflow bug fix",
+    "Playwright automation bug Python",
+    "small Python script automation",
+    "API integration developer"
+  ],
+  "filters": {
+    "contractorTier": "1,2",
+    "hourlyRateMin": 25,
+    "paymentVerified": true,
+    "proposalsMax": 10
+  },
+  "thresholds": {
+    "hourlyFloor": 30,
+    "fixedPriceMin": 50,
+    "fixedPriceMax": 1000,
+    "stopWhenConnectsBelow": 15,
+    "preferPostedWithinHours": 4
+  },
+  "skipRules": {
+    "hardGeoRestrictions": true,
+    "videoOnlyApplications": true,
+    "citizenshipOrClearanceLocks": true
+  },
+  "doNotBidPatterns": [
+    "telegram", "whatsapp", "signal app", "skype",
+    "off-platform", "off upwork", "outside upwork",
+    "crypto", "bitcoin", "usdt", "wallet",
+    "security fee", "processing fee", "signup fee",
+    "passport", "driver's license", "ssn", "bank details",
+    "unpaid trial", "test task",
+    "anydesk", "teamviewer",
+    "humanize ai content", "chatgpt detector bypass",
+    "essay writing", "assignment help", "take my exam",
+    "dropshipping virtual assistant",
+    "fake hiring", "ai interview round",
+    "must work on my computer"
+  ]
+}

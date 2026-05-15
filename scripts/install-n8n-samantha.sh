@@ -15,6 +15,8 @@ HERMES_HOME="${HERMES_HOME:-/root/.hermes}"
 PNPM_STORE_DIR="${PNPM_STORE_DIR:-/root/.pnpm-store}"
 LOG_FILE="${LOG_FILE:-/root/n8n-install-issue29.log}"
 START_SCRIPT="${START_SCRIPT:-${HERMES_HOME}/bin/start-n8n.sh}"
+AGENT_CONTROL_SCRIPT="${AGENT_CONTROL_SCRIPT:-${HERMES_HOME}/bin/n8n-agent-control.sh}"
+WORKFLOW_AUTHOR_SCRIPT="${WORKFLOW_AUTHOR_SCRIPT:-${HERMES_HOME}/bin/n8n-workflow-author.sh}"
 PID_FILE="${PID_FILE:-${HERMES_HOME}/n8n.pid}"
 RUN_LOG="${RUN_LOG:-${HERMES_HOME}/logs/n8n.log}"
 
@@ -124,6 +126,26 @@ SH
   chmod +x "$START_SCRIPT"
 }
 
+install_helper_scripts() {
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  mkdir -p "${HERMES_HOME}/bin"
+
+  if [[ -f "${script_dir}/n8n-agent-control.sh" ]]; then
+    install -m 0755 "${script_dir}/n8n-agent-control.sh" "$AGENT_CONTROL_SCRIPT"
+    log "installed n8n agent bridge at $AGENT_CONTROL_SCRIPT"
+  else
+    log "n8n agent bridge not found beside installer; skipping helper install"
+  fi
+
+  if [[ -f "${script_dir}/n8n-workflow-author.sh" ]]; then
+    install -m 0755 "${script_dir}/n8n-workflow-author.sh" "$WORKFLOW_AUTHOR_SCRIPT"
+    log "installed n8n workflow author at $WORKFLOW_AUTHOR_SCRIPT"
+  else
+    log "n8n workflow author not found beside installer; skipping helper install"
+  fi
+}
+
 start_n8n() {
   local pids
   pids="$(ps -eo pid=,cmd= | awk '/n8n start|start-n8n/ && !/awk/ {print $1}')"
@@ -165,6 +187,7 @@ main() {
   install_n8n
   repair_sqlite
   write_start_script
+  install_helper_scripts
   start_n8n
   wait_for_healthz
   df -h /

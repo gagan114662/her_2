@@ -33,6 +33,9 @@ struct N8nSamanthaInstallerTests {
         #expect(script.contains("NODE_PATH=\"/usr/local/bin/global/5/node_modules:/usr/local/bin/global/5/.pnpm/node_modules"))
         #expect(script.contains("/healthz"))
         #expect(script.contains("start-n8n.sh"))
+        #expect(script.contains("n8n-agent-control.sh"))
+        #expect(script.contains("n8n-workflow-author.sh"))
+        #expect(script.contains("install_helper_scripts"))
     }
 
     private func installerScriptPath() throws -> URL {

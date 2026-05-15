@@ -176,8 +176,9 @@ scripts/install-n8n-samantha.sh
 ```
 
 The script installs n8n with pnpm, rebuilds the native sqlite3 binding that n8n
-needs at startup, writes `/root/.hermes/bin/start-n8n.sh`, starts n8n on port
-`5678`, and verifies:
+needs at startup, installs the Samantha n8n helper scripts under
+`/root/.hermes/bin`, writes `/root/.hermes/bin/start-n8n.sh`, starts n8n on
+port `5678`, and verifies:
 
 ```sh
 curl http://127.0.0.1:5678/healthz
@@ -213,6 +214,41 @@ SAMANTHA_AGENT_RUNTIME=codex scripts/n8n-agent-control.sh --prompt "..."
 SAMANTHA_AGENT_CONTROL_MODE=dry-run scripts/n8n-agent-control.sh --prompt "..."
 SAMANTHA_AGENT_COMMAND="custom local command" scripts/n8n-agent-control.sh --prompt "..."
 ```
+
+### Complex Workflow Authoring
+
+Samantha can create, validate, and optionally import complex n8n workflows with
+the workflow author helper:
+
+~~~sh
+scripts/n8n-workflow-author.sh \
+  --name "Daily revenue follow-up" \
+  --prompt "Every morning, inspect revenue events, retry failures, and summarize next actions." \
+  --import \
+  --activate
+~~~
+
+The default workflow includes manual, scheduled, and webhook triggers; a Set
+node for task preparation; Execute Command nodes that call
+`n8n-agent-control.sh`; parsing, branching, wait/retry behavior, and webhook
+responses. Before import, the helper validates the n8n JSON contract so bad
+agent output does not silently become a broken workflow.
+
+Import works in two production modes:
+
+~~~sh
+# Uses the n8n public API when an API key is available.
+N8N_API_KEY="..." scripts/n8n-workflow-author.sh --prompt "..." --import
+
+# Falls back to the local n8n CLI on Samantha when no API key is configured.
+scripts/n8n-workflow-author.sh --prompt "..." --import
+~~~
+
+For a generated workflow file without touching the running n8n instance:
+
+~~~sh
+scripts/n8n-workflow-author.sh --prompt "..." --dry-run
+~~~
 
 ## How it routes
 

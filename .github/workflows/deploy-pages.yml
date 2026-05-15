@@ -1,6 +1,12 @@
 name: Deploy Pages
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-pages.yml"
+      - "site/**"
   workflow_dispatch:
 
 permissions:
@@ -27,7 +33,7 @@ jobs:
       - name: Stage static site
         run: |
           mkdir -p _site
-          cp site/index.html _site/index.html
+          cp -R site/. _site/
           touch _site/.nojekyll
 
       - name: Upload Pages artifact

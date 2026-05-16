@@ -249,13 +249,18 @@ extension FactoryBrowserService {
                 "blocker_reason": text_from(item, "blocker_reason", "blocker", default=None),
                 "updated_at": text_from(item, "updated_at", "timestamp", default=None),
             })
+        ledger_by_opportunity_id = {
+            entry.get("opportunity_id"): entry
+            for entry in ledger
+            if entry.get("opportunity_id")
+        }
 
         opportunities = []
         for index, item in enumerate(list_from(raw, "opportunities", "remote_jobs", "leads")):
             if not isinstance(item, dict):
                 continue
             opportunity_id = text_from(item, "id", "job_id", "opportunity_id", default=stable_id("opp", text_from(item, "source_url", "url", default=""), index))
-            payment = next((entry for entry in ledger if entry.get("opportunity_id") == opportunity_id), None)
+            payment = ledger_by_opportunity_id.get(opportunity_id)
             opportunities.append({
                 "id": opportunity_id,
                 "source": text_from(item, "source", default="unknown"),
@@ -363,6 +368,10 @@ extension FactoryBrowserService {
             })
 
         stage_order = ["demand", "proof", "paid", "executing", "qa", "delivery", "blocked"]
+        milestone_count_by_stage = {}
+        for item in milestones:
+            stage = item["stage"]
+            milestone_count_by_stage[stage] = milestone_count_by_stage.get(stage, 0) + 1
         queue_overrides = {
             str(item.get("stage") or item.get("id") or "").lower(): item
             for item in list_from(raw, "queues")
@@ -371,7 +380,7 @@ extension FactoryBrowserService {
         queues = []
         for stage in stage_order:
             override = queue_overrides.get(stage, {})
-            count = int_from(override, "count", sum(1 for item in milestones if item["stage"] == stage))
+            count = int_from(override, "count", milestone_count_by_stage.get(stage, 0))
             queues.append({
                 "id": text_from(override, "id", default=stage),
                 "name": text_from(override, "name", default=stage.replace("_", " ").title()),

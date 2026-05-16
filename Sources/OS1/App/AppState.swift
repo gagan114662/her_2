@@ -1274,7 +1274,8 @@ final class AppState: ObservableObject {
         let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedPrompt.isEmpty else { return false }
 
-        let existingVisibleSessionIDs = Set((sessions + pinnedSessionSummaries).map(\.id))
+        var existingVisibleSessionIDs = Set(sessions.map(\.id))
+        existingVisibleSessionIDs.formUnion(pinnedSessionSummaries.map(\.id))
 
         isSendingSessionMessage = true
         pendingSessionTurn = PendingSessionTurn(

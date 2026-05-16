@@ -636,7 +636,73 @@ final class KanbanBrowserService: @unchecked Sendable {
                 pass
             return []
 
-        def task_object_to_dict(task, conn=None):
+        def empty_task_auxiliary_maps():
+            return {
+                "parent_ids": {},
+                "child_ids": {},
+                "progress": {},
+                "comment_counts": {},
+                "event_counts": {},
+                "run_counts": {},
+                "latest_events": {},
+            }
+
+        def task_auxiliary_maps(conn, task_ids):
+            maps = empty_task_auxiliary_maps()
+            task_ids = [task_id for task_id in task_ids if task_id]
+            if not conn or not task_ids:
+                return maps
+            placeholders = ",".join("?" for _ in task_ids)
+
+            if table_exists(conn, "task_links"):
+                for row in conn.execute(
+                    f"SELECT child_id, parent_id FROM task_links WHERE child_id IN ({placeholders}) ORDER BY parent_id",
+                    task_ids,
+                ).fetchall():
+                    maps["parent_ids"].setdefault(row["child_id"], []).append(row["parent_id"])
+                for row in conn.execute(
+                    f"SELECT parent_id, child_id FROM task_links WHERE parent_id IN ({placeholders}) ORDER BY child_id",
+                    task_ids,
+                ).fetchall():
+                    maps["child_ids"].setdefault(row["parent_id"], []).append(row["child_id"])
+
+                if table_exists(conn, "tasks"):
+                    for row in conn.execute(
+                        "SELECT l.parent_id AS task_id, COUNT(*) AS total, "
+                        "SUM(CASE WHEN t.status = 'done' THEN 1 ELSE 0 END) AS done "
+                        "FROM task_links l JOIN tasks t ON t.id = l.child_id "
+                        f"WHERE l.parent_id IN ({placeholders}) GROUP BY l.parent_id",
+                        task_ids,
+                    ).fetchall():
+                        total = int(row["total"] or 0)
+                        if total > 0:
+                            maps["progress"][row["task_id"]] = {
+                                "done": int(row["done"] or 0),
+                                "total": total,
+                            }
+
+            def load_counts(table, target):
+                if not table_exists(conn, table):
+                    return
+                for row in conn.execute(
+                    f"SELECT task_id, COUNT(*) AS n FROM {quote_ident(table)} WHERE task_id IN ({placeholders}) GROUP BY task_id",
+                    task_ids,
+                ).fetchall():
+                    target[row["task_id"]] = int(row["n"] or 0)
+
+            load_counts("task_comments", maps["comment_counts"])
+            load_counts("task_events", maps["event_counts"])
+            load_counts("task_runs", maps["run_counts"])
+
+            if table_exists(conn, "task_events"):
+                for row in conn.execute(
+                    f"SELECT task_id, MAX(created_at) AS created_at FROM task_events WHERE task_id IN ({placeholders}) GROUP BY task_id",
+                    task_ids,
+                ).fetchall():
+                    maps["latest_events"][row["task_id"]] = int_value(row["created_at"])
+            return maps
+
+        def task_object_to_dict(task, conn=None, aux=None):
             task_id = getattr(task, "id", "")
             parent_ids = []
             child_ids = []
@@ -644,13 +710,23 @@ final class KanbanBrowserService: @unchecked Sendable {
             event_count = 0
             run_count = 0
             latest_event_at = None
-            if conn is not None and task_id:
+            progress = None
+            if aux is not None and task_id:
+                parent_ids = aux["parent_ids"].get(task_id, [])
+                child_ids = aux["child_ids"].get(task_id, [])
+                comment_count = aux["comment_counts"].get(task_id, 0)
+                event_count = aux["event_counts"].get(task_id, 0)
+                run_count = aux["run_counts"].get(task_id, 0)
+                latest_event_at = aux["latest_events"].get(task_id)
+                progress = aux["progress"].get(task_id)
+            elif conn is not None and task_id:
                 parent_ids = link_ids(conn, task_id, parents=True)
                 child_ids = link_ids(conn, task_id, parents=False)
                 comment_count = count_rows(conn, "task_comments", "task_id", task_id)
                 event_count = count_rows(conn, "task_events", "task_id", task_id)
                 run_count = count_rows(conn, "task_runs", "task_id", task_id)
                 latest_event_at = latest_event_timestamp(conn, task_id)
+                progress = progress_for_task(conn, task_id)
             return {
                 "id": task_id,
                 "title": getattr(task, "title", None),
@@ -675,18 +751,34 @@ final class KanbanBrowserService: @unchecked Sendable {
                 "current_run_id": int_value(getattr(task, "current_run_id", None)),
                 "parent_ids": parent_ids,
                 "child_ids": child_ids,
-                "progress": progress_for_task(conn, task_id),
+                "progress": progress,
                 "comment_count": comment_count,
                 "event_count": event_count,
                 "run_count": run_count,
                 "latest_event_at": latest_event_at,
             }
 
-        def task_row_to_dict(row, conn=None):
+        def task_row_to_dict(row, conn=None, aux=None):
             keys = set(row.keys())
             def get(name, default=None):
                 return row[name] if name in keys else default
             task_id = get("id", "")
+            if aux is not None:
+                parent_ids = aux["parent_ids"].get(task_id, [])
+                child_ids = aux["child_ids"].get(task_id, [])
+                progress = aux["progress"].get(task_id)
+                comment_count = aux["comment_counts"].get(task_id, 0)
+                event_count = aux["event_counts"].get(task_id, 0)
+                run_count = aux["run_counts"].get(task_id, 0)
+                latest_event_at = aux["latest_events"].get(task_id)
+            else:
+                parent_ids = link_ids(conn, task_id, parents=True) if conn else []
+                child_ids = link_ids(conn, task_id, parents=False) if conn else []
+                progress = progress_for_task(conn, task_id)
+                comment_count = count_rows(conn, "task_comments", "task_id", task_id) if conn else 0
+                event_count = count_rows(conn, "task_events", "task_id", task_id) if conn else 0
+                run_count = count_rows(conn, "task_runs", "task_id", task_id) if conn else 0
+                latest_event_at = latest_event_timestamp(conn, task_id) if conn else None
             return {
                 "id": task_id,
                 "title": get("title"),
@@ -709,13 +801,13 @@ final class KanbanBrowserService: @unchecked Sendable {
                 "max_runtime_seconds": int_value(get("max_runtime_seconds")),
                 "last_heartbeat_at": int_value(get("last_heartbeat_at")),
                 "current_run_id": int_value(get("current_run_id")),
-                "parent_ids": link_ids(conn, task_id, parents=True) if conn else [],
-                "child_ids": link_ids(conn, task_id, parents=False) if conn else [],
-                "progress": progress_for_task(conn, task_id),
-                "comment_count": count_rows(conn, "task_comments", "task_id", task_id) if conn else 0,
-                "event_count": count_rows(conn, "task_events", "task_id", task_id) if conn else 0,
-                "run_count": count_rows(conn, "task_runs", "task_id", task_id) if conn else 0,
-                "latest_event_at": latest_event_timestamp(conn, task_id) if conn else None,
+                "parent_ids": parent_ids,
+                "child_ids": child_ids,
+                "progress": progress,
+                "comment_count": comment_count,
+                "event_count": event_count,
+                "run_count": run_count,
+                "latest_event_at": latest_event_at,
             }
 
         def count_rows(conn, table, column, value):
@@ -765,31 +857,35 @@ final class KanbanBrowserService: @unchecked Sendable {
             if not conn or not table_exists(conn, "tasks") or not table_exists(conn, "task_links"):
                 return 0
             import time
-            promoted = 0
             try:
                 conn.execute("BEGIN IMMEDIATE")
-                todo_rows = conn.execute("SELECT id FROM tasks WHERE status = 'todo'").fetchall()
-                for row in todo_rows:
-                    task_id = row["id"]
-                    parents = conn.execute(
-                        "SELECT t.status FROM tasks t "
-                        "JOIN task_links l ON l.parent_id = t.id "
-                        "WHERE l.child_id = ?",
-                        (task_id,),
-                    ).fetchall()
-                    if all(parent["status"] == "done" for parent in parents):
-                        cur = conn.execute(
-                            "UPDATE tasks SET status = 'ready' WHERE id = ? AND status = 'todo'",
-                            (task_id,),
-                        )
-                        if cur.rowcount == 1:
-                            if table_exists(conn, "task_events"):
-                                conn.execute(
-                                    "INSERT INTO task_events (task_id, kind, payload, created_at) "
-                                    "VALUES (?, 'promoted', NULL, ?)",
-                                    (task_id, int(time.time())),
-                                )
-                            promoted += 1
+                ready_rows = conn.execute(
+                    "SELECT child.id AS id FROM tasks child "
+                    "WHERE child.status = 'todo' "
+                    "AND NOT EXISTS ("
+                    "  SELECT 1 FROM task_links l "
+                    "  JOIN tasks parent ON parent.id = l.parent_id "
+                    "  WHERE l.child_id = child.id AND parent.status != 'done'"
+                    ")"
+                ).fetchall()
+                ready_ids = [row["id"] for row in ready_rows]
+                if not ready_ids:
+                    conn.commit()
+                    return 0
+
+                placeholders = ",".join("?" for _ in ready_ids)
+                cur = conn.execute(
+                    f"UPDATE tasks SET status = 'ready' WHERE status = 'todo' AND id IN ({placeholders})",
+                    ready_ids,
+                )
+                promoted = int(cur.rowcount or 0)
+                if promoted and table_exists(conn, "task_events"):
+                    now = int(time.time())
+                    conn.executemany(
+                        "INSERT INTO task_events (task_id, kind, payload, created_at) "
+                        "VALUES (?, 'promoted', NULL, ?)",
+                        [(task_id, now) for task_id in ready_ids],
+                    )
                 conn.commit()
                 return promoted
             except Exception:
@@ -850,7 +946,9 @@ final class KanbanBrowserService: @unchecked Sendable {
             if not include_archived:
                 query += " WHERE status != 'archived'"
             query += " ORDER BY priority DESC, created_at ASC"
-            return [task_row_to_dict(row, conn) for row in conn.execute(query).fetchall()]
+            rows = conn.execute(query).fetchall()
+            aux = task_auxiliary_maps(conn, [row["id"] for row in rows])
+            return [task_row_to_dict(row, conn, aux) for row in rows]
 
         def direct_assignees(conn):
             names = set()
@@ -939,9 +1037,11 @@ final class KanbanBrowserService: @unchecked Sendable {
             try:
                 if kb is not None:
                     conn = kb.connect(db_path)
+                    raw_tasks = kb.list_tasks(conn, include_archived=include_archived)
+                    aux = task_auxiliary_maps(conn, [getattr(task, "id", "") for task in raw_tasks])
                     tasks = [
-                        task_object_to_dict(task, conn)
-                        for task in kb.list_tasks(conn, include_archived=include_archived)
+                        task_object_to_dict(task, conn, aux)
+                        for task in raw_tasks
                     ]
                     try:
                         assignees = kb.known_assignees(conn)

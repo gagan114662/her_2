@@ -32,7 +32,7 @@ struct FactoryView: View {
     private var header: some View {
         HermesPageHeader(
             title: "Factory",
-            subtitle: "A Conductor-inspired control tower for parallel agent labor: demand queues, worker sessions, QA gates, artifacts, and Stripe-backed milestone state."
+            subtitle: "A Conductor-inspired control tower for qualified paid remote jobs: discovery, scoring, proposal packs, workers, QA, delivery, and cash state."
         ) {
             HermesRefreshButton(isRefreshing: appState.isRefreshingFactory) {
                 Task { await appState.refreshFactoryDashboard(manual: true) }
@@ -44,6 +44,8 @@ struct FactoryView: View {
     private func dashboardContent(_ dashboard: FactoryDashboard) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             summaryPanel(dashboard.summary)
+            opportunitiesPanel(dashboard.opportunities)
+            approvalPanel(dashboard.opportunities, rules: dashboard.approvalRules)
             queuesPanel(dashboard.queues)
 
             HStack(alignment: .top, spacing: 16) {
@@ -60,6 +62,13 @@ struct FactoryView: View {
                     .frame(minWidth: 420, maxWidth: .infinity, alignment: .top)
             }
 
+            HStack(alignment: .top, spacing: 16) {
+                ledgerPanel(dashboard.revenueLedger)
+                    .frame(minWidth: 460, maxWidth: .infinity, alignment: .top)
+                eventsPanel(dashboard.events)
+                    .frame(minWidth: 420, maxWidth: .infinity, alignment: .top)
+            }
+
             statePathPanel(dashboard)
         }
     }
@@ -68,6 +77,10 @@ struct FactoryView: View {
         HermesSurfacePanel(title: "Parallel Capacity", subtitle: "How much agent labor Samantha can keep moving at once.") {
             HStack(spacing: 12) {
                 metricTile("Workers", "\(summary.activeWorkers)/\(summary.maxWorkers)", systemImage: "person.3.sequence")
+                metricTile("Leads", "\(summary.foundOpportunities)", systemImage: "scope")
+                metricTile("Qualified", "\(summary.qualifiedOpportunities)", systemImage: "line.3.horizontal.decrease.circle")
+                metricTile("Drafted", "\(summary.draftedOpportunities)", systemImage: "doc.text")
+                metricTile("Approved", "\(summary.approvedToSubmit)", systemImage: "paperplane")
                 metricTile("Queued", "\(summary.queuedMilestones)", systemImage: "tray.full")
                 metricTile("Running", "\(summary.runningMilestones)", systemImage: "play.circle")
                 metricTile("QA Blocked", "\(summary.qaBlocked)", systemImage: "exclamationmark.shield")
@@ -77,6 +90,112 @@ struct FactoryView: View {
 
             ProgressView(value: summary.workerUtilization)
                 .tint(theme.palette.success)
+        }
+    }
+
+    private func opportunitiesPanel(_ opportunities: [RemoteJobOpportunity]) -> some View {
+        HermesSurfacePanel(title: "Qualified Remote Jobs", subtitle: "JustHireMe-style discovery, quality gates, money scoring, and requirement-specific proposal packs.") {
+            if opportunities.isEmpty {
+                ContentUnavailableView("No paid jobs discovered", systemImage: "magnifyingglass", description: Text("Run Samantha discovery to populate requirement-driven remote work opportunities."))
+                    .frame(maxWidth: .infinity, minHeight: 220)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(opportunities.prefix(12)) { opportunity in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .top, spacing: 10) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(opportunity.title)
+                                        .font(.os1Body)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.os1OnCoralPrimary)
+                                        .lineLimit(1)
+                                    Text(opportunity.buyer + " · " + opportunity.platform)
+                                        .font(.os1SmallCaps)
+                                        .foregroundStyle(.os1OnCoralSecondary)
+                                        .lineLimit(1)
+                                }
+                                Spacer()
+                                Text(amount(opportunity.budget, opportunity.currency))
+                                    .font(.system(.caption, design: .monospaced))
+                                    .foregroundStyle(.os1OnCoralPrimary)
+                                HermesBadge(text: "\(opportunity.score.overall)", tint: tint(for: opportunity.status))
+                            }
+
+                            Text(opportunity.rawRequirement)
+                                .font(.os1SmallCaps)
+                                .foregroundStyle(.os1OnCoralSecondary)
+                                .lineLimit(2)
+
+                            HStack(spacing: 8) {
+                                HermesBadge(text: opportunity.status.title, tint: tint(for: opportunity.status))
+                                HermesBadge(text: "Pay \(opportunity.score.paymentProbability)", tint: theme.palette.success)
+                                HermesBadge(text: "Risk \(opportunity.score.risk)", tint: opportunity.score.risk > 50 ? theme.palette.danger : theme.palette.warning)
+                                if !opportunity.requiredTools.isEmpty {
+                                    Text(opportunity.requiredTools.prefix(3).joined(separator: ", "))
+                                        .font(.system(.caption, design: .monospaced))
+                                        .foregroundStyle(.os1OnCoralMuted)
+                                        .lineLimit(1)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                        }
+                        .padding(10)
+                        .background(theme.palette.darkOverlay.opacity(0.28), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+        }
+    }
+
+    private func approvalPanel(_ opportunities: [RemoteJobOpportunity], rules: [FactoryApprovalRule]) -> some View {
+        let awaiting = opportunities.filter { [.drafted, .approvedToSubmit].contains($0.status) }
+        return HermesSurfacePanel(title: "Approval Boundary", subtitle: "External submissions stay gated unless an explicit source rule matches.") {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Ready Packages")
+                        .font(.os1SmallCaps)
+                        .foregroundStyle(.os1OnCoralSecondary)
+                    if awaiting.isEmpty {
+                        Text("No proposal packs are waiting for approval.")
+                            .font(.os1Body)
+                            .foregroundStyle(.os1OnCoralMuted)
+                    } else {
+                        ForEach(awaiting.prefix(5)) { opportunity in
+                            HStack {
+                                Text(opportunity.title)
+                                    .font(.os1Body)
+                                    .lineLimit(1)
+                                Spacer()
+                                HermesBadge(text: opportunity.status.title, tint: tint(for: opportunity.status))
+                            }
+                            .padding(8)
+                            .background(theme.palette.darkOverlay.opacity(0.24), in: RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Auto-Submit Rules")
+                        .font(.os1SmallCaps)
+                        .foregroundStyle(.os1OnCoralSecondary)
+                    if rules.isEmpty {
+                        Text("Draft-only mode. Add approval rules on Samantha before auto-submit.")
+                            .font(.os1Body)
+                            .foregroundStyle(.os1OnCoralMuted)
+                    } else {
+                        ForEach(rules.prefix(5)) { rule in
+                            HStack {
+                                Text(rule.platform + " · risk ≤ \(rule.maxRisk)")
+                                    .font(.os1Body)
+                                    .lineLimit(1)
+                                Spacer()
+                                HermesBadge(text: rule.enabled ? "Enabled" : "Paused", tint: rule.enabled ? theme.palette.success : theme.palette.onCoralMuted)
+                            }
+                            .padding(8)
+                            .background(theme.palette.darkOverlay.opacity(0.24), in: RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -263,6 +382,77 @@ struct FactoryView: View {
         }
     }
 
+    private func ledgerPanel(_ ledger: [FactoryRevenueLedgerEntry]) -> some View {
+        HermesSurfacePanel(title: "Revenue Ledger", subtitle: "Projected, quoted, invoiced, pending, and received money by opportunity.") {
+            if ledger.isEmpty {
+                ContentUnavailableView("No ledger entries", systemImage: "dollarsign.arrow.circlepath", description: Text("Qualified jobs create ledger rows before work is promoted to milestones."))
+                    .frame(maxWidth: .infinity, minHeight: 180)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(ledger.prefix(10)) { entry in
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(entry.opportunityID ?? entry.milestoneID ?? entry.id)
+                                    .font(.system(.caption, design: .monospaced))
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.os1OnCoralPrimary)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Text(entry.blockerReason ?? "Pending payment path")
+                                    .font(.os1SmallCaps)
+                                    .foregroundStyle(.os1OnCoralSecondary)
+                                    .lineLimit(1)
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(amount(entry.quotedValue, entry.currency))
+                                Text("net " + amount(entry.netReceived, entry.currency))
+                                    .foregroundStyle(.os1OnCoralMuted)
+                            }
+                            .font(.system(.caption, design: .monospaced))
+                            HermesBadge(text: entry.paymentStatus.title, tint: tint(for: entry.paymentStatus))
+                        }
+                        .padding(10)
+                        .background(theme.palette.darkOverlay.opacity(0.28), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+        }
+    }
+
+    private func eventsPanel(_ events: [FactoryEvent]) -> some View {
+        HermesSurfacePanel(title: "Audit Events", subtitle: "Every discovery, gate, scoring, draft, approval, and payment transition leaves evidence.") {
+            if events.isEmpty {
+                ContentUnavailableView("No events", systemImage: "list.bullet.rectangle", description: Text("Samantha records lead pipeline transitions here."))
+                    .frame(maxWidth: .infinity, minHeight: 180)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(events.prefix(10)) { event in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(event.action)
+                                    .font(.os1Body)
+                                    .fontWeight(.semibold)
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(event.timestamp)
+                                    .font(.system(.caption, design: .monospaced))
+                                    .foregroundStyle(.os1OnCoralMuted)
+                                    .lineLimit(1)
+                            }
+                            Text(event.evidence.isEmpty ? event.subjectID : event.evidence)
+                                .font(.os1SmallCaps)
+                                .foregroundStyle(.os1OnCoralSecondary)
+                                .lineLimit(2)
+                        }
+                        .padding(10)
+                        .background(theme.palette.darkOverlay.opacity(0.28), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+        }
+    }
+
     private func statePathPanel(_ dashboard: FactoryDashboard) -> some View {
         Text("State file: \(dashboard.statePath)")
             .font(.system(.caption, design: .monospaced))
@@ -363,6 +553,21 @@ struct FactoryView: View {
         case .paid:
             theme.palette.success
         case .disputed, .refunded:
+            theme.palette.danger
+        }
+    }
+
+    private func tint(for status: RemoteJobOpportunityStatus) -> Color {
+        switch status {
+        case .found, .parsed, .ranked:
+            theme.palette.onCoralMuted
+        case .qualified, .drafted, .approvedToSubmit:
+            theme.palette.warning
+        case .submitted, .accepted, .inProgress, .qa:
+            .accentColor
+        case .delivered, .invoiced, .paid:
+            theme.palette.success
+        case .rejected, .closed:
             theme.palette.danger
         }
     }

@@ -161,6 +161,60 @@ extension FactoryBrowserService {
                 return "unpaid"
             return value
 
+        def normalize_opportunity_status(value):
+            value = str(value or "found").strip().lower().replace("-", "_").replace(" ", "_")
+            aliases = {
+                "ready": "approved_to_submit",
+                "approved": "approved_to_submit",
+                "working": "in_progress",
+                "executing": "in_progress",
+            }
+            value = aliases.get(value, value)
+            allowed = {"found", "parsed", "rejected", "qualified", "ranked", "drafted", "approved_to_submit", "submitted", "accepted", "in_progress", "qa", "delivered", "invoiced", "paid", "closed"}
+            return value if value in allowed else "found"
+
+        def list_text(item, *keys):
+            for key in keys:
+                value = item.get(key)
+                if isinstance(value, list):
+                    return [str(v) for v in value if str(v).strip()]
+                if isinstance(value, str) and value.strip():
+                    return [part.strip() for part in value.split("\n") if part.strip()]
+            return []
+
+        def score_from(item):
+            score = item.get("score") if isinstance(item.get("score"), dict) else {}
+            reasons = score.get("reasons") if isinstance(score.get("reasons"), list) else list_text(item, "score_reasons", "reasons")
+            return {
+                "overall": int_from(score, "overall", int_from(item, "score", 0)),
+                "payment_probability": int_from(score, "payment_probability", int_from(score, "payment_confidence", 0)),
+                "time_to_cash": int_from(score, "time_to_cash", 0),
+                "payout": int_from(score, "payout", int_from(score, "payout_size", 0)),
+                "effort": int_from(score, "effort", int_from(score, "effort_estimate", 0)),
+                "buyer_trust": int_from(score, "buyer_trust", 0),
+                "requirement_clarity": int_from(score, "requirement_clarity", 0),
+                "competition": int_from(score, "competition", 0),
+                "capability_fit": int_from(score, "capability_fit", int_from(score, "samantha_fit", 0)),
+                "account_readiness": int_from(score, "account_readiness", int_from(score, "approval_readiness", 0)),
+                "risk": int_from(score, "risk", int_from(score, "execution_risk", 0)),
+                "reasons": [str(reason) for reason in reasons],
+            }
+
+        def proposal_from(item):
+            package = item.get("proposal_package")
+            if not isinstance(package, dict):
+                return None
+            return {
+                "buyer_problem_summary": text_from(package, "buyer_problem_summary", default=""),
+                "exact_deliverables": list_text(package, "exact_deliverables", "deliverables"),
+                "work_plan": list_text(package, "work_plan"),
+                "milestone_split": list_text(package, "milestone_split"),
+                "access_needed": list_text(package, "access_needed"),
+                "proof_plan": list_text(package, "proof_plan", "proof_qa_plan"),
+                "pricing_recommendation": text_from(package, "pricing_recommendation", "pricing_payment_recommendation", default=""),
+                "proposal_text": text_from(package, "proposal_text", default=""),
+            }
+
         now = _dt.datetime.now(_dt.timezone.utc).isoformat().replace("+00:00", "Z")
         home = pathlib.Path.home()
         hermes_home = pathlib.Path(request.get("hermes_home") or (home / ".hermes"))
@@ -173,6 +227,60 @@ extension FactoryBrowserService {
         ]
         state_path = next((path for path in candidates if path.exists()), candidates[0])
         raw = read_json(state_path)
+
+        ledger = []
+        for index, item in enumerate(list_from(raw, "revenue_ledger", "ledger")):
+            if not isinstance(item, dict):
+                continue
+            ledger.append({
+                "id": text_from(item, "id", default=stable_id("ledger", index)),
+                "opportunity_id": text_from(item, "opportunity_id", "job_id", default=None),
+                "milestone_id": text_from(item, "milestone_id", default=None),
+                "projected_value": float_from(item, "projected_value", 0.0),
+                "quoted_value": float_from(item, "quoted_value", 0.0),
+                "accepted_value": float_from(item, "accepted_value", 0.0),
+                "invoiced_value": float_from(item, "invoiced_value", 0.0),
+                "pending_payment": float_from(item, "pending_payment", 0.0),
+                "platform_fees": float_from(item, "platform_fees", 0.0),
+                "net_received": float_from(item, "net_received", 0.0),
+                "currency": text_from(item, "currency", default=text_from(raw, "currency", default="USD")).upper(),
+                "payment_status": normalize_payment_status(item.get("payment_status") or item.get("status")),
+                "proof_url": text_from(item, "proof_url", "payment_proof_url", default=None),
+                "blocker_reason": text_from(item, "blocker_reason", "blocker", default=None),
+                "updated_at": text_from(item, "updated_at", "timestamp", default=None),
+            })
+
+        opportunities = []
+        for index, item in enumerate(list_from(raw, "opportunities", "remote_jobs", "leads")):
+            if not isinstance(item, dict):
+                continue
+            opportunity_id = text_from(item, "id", "job_id", "opportunity_id", default=stable_id("opp", text_from(item, "source_url", "url", default=""), index))
+            payment = next((entry for entry in ledger if entry.get("opportunity_id") == opportunity_id), None)
+            opportunities.append({
+                "id": opportunity_id,
+                "source": text_from(item, "source", default="unknown"),
+                "source_url": text_from(item, "source_url", "url", default=""),
+                "platform": text_from(item, "platform", default="unknown"),
+                "buyer": text_from(item, "buyer", "company", "client", default="unknown buyer"),
+                "title": text_from(item, "title", default=f"Opportunity {index + 1}"),
+                "raw_requirement": text_from(item, "raw_requirement", "description", "requirement", default=""),
+                "normalized_deliverables": list_text(item, "normalized_deliverables", "deliverables"),
+                "acceptance_criteria": list_text(item, "acceptance_criteria"),
+                "budget": float_from(item, "budget", 0.0),
+                "currency": text_from(item, "currency", default=text_from(raw, "currency", default="USD")).upper(),
+                "urgency": text_from(item, "urgency", default="unknown"),
+                "contact_route": text_from(item, "contact_route", default="platform"),
+                "required_tools": list_text(item, "required_tools", "tech_stack"),
+                "account_readiness": text_from(item, "account_readiness", default="unknown"),
+                "risk_flags": list_text(item, "risk_flags"),
+                "status": normalize_opportunity_status(item.get("status")),
+                "score": score_from(item),
+                "proposal_package": proposal_from(item),
+                "execution_plan": list_text(item, "execution_plan"),
+                "payment": payment,
+                "evidence": list_text(item, "evidence"),
+                "updated_at": text_from(item, "updated_at", default=None),
+            })
 
         milestones = []
         for index, item in enumerate(list_from(raw, "milestones", "jobs", "opportunities", "work_items")):
@@ -276,11 +384,40 @@ extension FactoryBrowserService {
         summary_raw = raw.get("summary") if isinstance(raw.get("summary"), dict) else {}
         active_workers = int_from(summary_raw, "active_workers", sum(1 for worker in workers if worker["status"] == "running"))
         max_workers = int_from(summary_raw, "max_workers", max(active_workers, int_from(raw, "max_workers", 10)))
+        found_opportunities = int_from(summary_raw, "found_opportunities", len(opportunities))
+        qualified_opportunities = int_from(summary_raw, "qualified_opportunities", sum(1 for item in opportunities if item["status"] in {"qualified", "ranked", "drafted", "approved_to_submit", "submitted", "accepted", "in_progress", "qa", "delivered", "invoiced", "paid"}))
+        drafted_opportunities = int_from(summary_raw, "drafted_opportunities", sum(1 for item in opportunities if item["status"] in {"drafted", "approved_to_submit", "submitted", "accepted", "in_progress", "qa", "delivered", "invoiced", "paid"}))
+        approved_to_submit = int_from(summary_raw, "approved_to_submit", sum(1 for item in opportunities if item["status"] == "approved_to_submit"))
         queued_milestones = int_from(summary_raw, "queued_milestones", sum(1 for item in milestones if item["stage"] in {"demand", "proof", "paid"}))
         running_milestones = int_from(summary_raw, "running_milestones", sum(1 for item in milestones if item["stage"] == "executing"))
         qa_blocked = int_from(summary_raw, "qa_blocked", sum(1 for item in milestones if item["qa_status"] in {"failed", "needs_human"} or item["stage"] == "blocked"))
         ready_to_deliver = int_from(summary_raw, "ready_to_deliver", sum(1 for item in milestones if item["stage"] == "delivery" and item["qa_status"] == "passed"))
         revenue_at_risk = float_from(summary_raw, "revenue_at_risk", sum(item["budget"] for item in milestones if item["stage"] not in {"delivery"}))
+        events = []
+        for index, item in enumerate(list_from(raw, "events", "audit_events")):
+            if not isinstance(item, dict):
+                continue
+            events.append({
+                "id": text_from(item, "id", default=stable_id("event", index, item.get("timestamp"))),
+                "timestamp": text_from(item, "timestamp", "ts", default=now),
+                "subject_id": text_from(item, "subject_id", "opportunity_id", "job_id", "milestone_id", default="factory"),
+                "action": text_from(item, "action", default="logged"),
+                "evidence": text_from(item, "evidence", "reason", default=""),
+            })
+        approval_rules = []
+        for index, item in enumerate(list_from(raw, "approval_rules")):
+            if not isinstance(item, dict):
+                continue
+            approval_rules.append({
+                "id": text_from(item, "id", default=stable_id("rule", index)),
+                "source": text_from(item, "source", default="*"),
+                "platform": text_from(item, "platform", default="*"),
+                "max_risk": int_from(item, "max_risk", 35),
+                "max_quoted_value": float_from(item, "max_quoted_value", 0.0),
+                "allowed_actions": list_text(item, "allowed_actions"),
+                "enabled": bool(item.get("enabled", True)),
+                "created_at": text_from(item, "created_at", default=None),
+            })
 
         print(json.dumps({
             "state_path": str(state_path),
@@ -288,6 +425,10 @@ extension FactoryBrowserService {
             "summary": {
                 "active_workers": active_workers,
                 "max_workers": max_workers,
+                "found_opportunities": found_opportunities,
+                "qualified_opportunities": qualified_opportunities,
+                "drafted_opportunities": drafted_opportunities,
+                "approved_to_submit": approved_to_submit,
                 "queued_milestones": queued_milestones,
                 "running_milestones": running_milestones,
                 "qa_blocked": qa_blocked,
@@ -295,11 +436,15 @@ extension FactoryBrowserService {
                 "revenue_at_risk": revenue_at_risk,
                 "currency": text_from(raw, "currency", default="USD").upper(),
             },
+            "opportunities": opportunities,
             "queues": queues,
             "workers": workers,
             "milestones": milestones,
             "qa_reviews": qa_reviews,
             "payments": payments,
+            "revenue_ledger": ledger,
+            "events": events,
+            "approval_rules": approval_rules,
         }))
         """##
     }
